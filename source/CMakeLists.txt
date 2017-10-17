@@ -1,0 +1,8 @@
+set(SOURCE
+    ${SOURCE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/GLcamera.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/GLwidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/MainWindow.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/OpenGL_App_QT.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Point3d.cpp
+    PARENT_SCOPE)

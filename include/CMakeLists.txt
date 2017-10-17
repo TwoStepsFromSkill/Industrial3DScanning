@@ -1,0 +1,7 @@
+set(HEADER
+    ${HEADER}
+    ${CMAKE_CURRENT_SOURCE_DIR}/GLcamera.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/GLwidget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/MainWindow.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Point3d.h
+    PARENT_SCOPE)
