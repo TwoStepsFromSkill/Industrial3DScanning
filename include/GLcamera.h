@@ -9,13 +9,13 @@ public:
     GLcamera();
 
     void initializeCamera(Point3d rotationCenter, double sceneRadius);
-    void setWindowSize(int winWidth, int winHeight){m_winWidth=winWidth; m_winHeight=winHeight;}
+    void setWindowSize(int winWidth, int winHeight);
     void updateProjection();
-    void zoom(double factor){m_zoomFactor*=factor; updateProjection();}
+    void zoom(double factor);
     void rotate(int x1, int y1, int x2, int y2);
 
-    void usePerspectiveProjection(bool enable){ m_usePerspectiveProjection = enable; updateProjection();}
-    bool usesPerspectiveProjection()const {return m_usePerspectiveProjection;}
+    void usePerspectiveProjection(bool enable);
+    bool usesPerspectiveProjection() const;
 
 private:
     Point3d m_rotationCenter;

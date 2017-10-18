@@ -27,20 +27,20 @@ void GLwidget::paintGL()
     //draws the scene background
     drawBackground();
 
+    glEnable(GL_DEPTH_TEST);
+
     //Draw pointclouds
     if (!m_points.empty())
     { /* Drawing Points with VertexArrays */
         glEnableClientState(GL_VERTEX_ARRAY);
 
         glPointSize(2);
-        glColor3ub(255, 255, 255);
+        glColor3ub(255, 133, 0);
         glVertexPointer(3, GL_DOUBLE, sizeof(Point3d), &m_points[0]);
         glDrawArrays(GL_POINTS, 0, (unsigned int)m_points.size());
 
         glDisableClientState(GL_VERTEX_ARRAY);
     }
-
-
 
     //draw coordinate frame
     drawCoordinateAxes();
@@ -81,14 +81,14 @@ void GLwidget::paintGL()
     update();
 }
 
-void GLwidget::mousePressEvent(QMouseEvent * e)  ///< 
+void GLwidget::mousePressEvent(QMouseEvent * e)  ///<
 {
     if (e->buttons() == Qt::LeftButton)
         m_mouseLastPos = e->pos();
 }
 
-void GLwidget::mouseMoveEvent(QMouseEvent * e)   ///< 
-{ 
+void GLwidget::mouseMoveEvent(QMouseEvent * e)   ///<
+{
     //std::cout << e->pos().x() << "," << e->pos().y()<<std::endl;
 
     if (e->buttons() != Qt::LeftButton){ return; }
@@ -227,12 +227,16 @@ void GLwidget::drawCoordinateAxes()
     glPopMatrix();
 
     glPushMatrix();
-    glColor3ub(64, 164, 164);
+    glColor3ub(0, 0, 255);
     glTranslated(m_sceneCenter.x, m_sceneCenter.y, m_sceneCenter.z);
     glScaled(m_sceneRadius, m_sceneRadius, m_sceneRadius);
     drawCircle();
     //draw another circle 90 degree rotated
     glRotated(90, 1, 0, 0);
+    glColor3ub(0, 255, 0);
+    drawCircle();
+    glRotated(90, 0, 1, 0);
+    glColor3ub(255, 0, 0);
     drawCircle();
     glPopMatrix();
 
