@@ -4,6 +4,7 @@
 #include <QtWidgets/QMainWindow>
 #include "GLwidget.h"
 #include "Point3d.h"
+#include "KDTree.h"
 
 class MainWindow : public QMainWindow
 {

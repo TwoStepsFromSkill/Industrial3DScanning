@@ -6,7 +6,7 @@
 //Definition of Point3d structure (our 3d Vector)
 struct Point3d
 {
-public:
+public:	
     Point3d() /// < constructor of this object
     {
         x = 0; y = 0; z = 0;

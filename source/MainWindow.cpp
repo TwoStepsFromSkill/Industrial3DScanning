@@ -26,6 +26,12 @@ void MainWindow::openFile()
 
     std::vector<Point3d> points;
     loadFileXYZ(filenames.front().toLocal8Bit(), points);
+
+	Node* tree = KDTree::buildKDTree(points.data(), points.data() + points.size()-1,0);
+
+	std::cout << tree->leftChild->ptrLastPoint - tree->leftChild->ptrFirstPoint << std::endl;
+	std::cout << tree->rightChild->ptrLastPoint - tree->rightChild->ptrFirstPoint << std::endl;
+
     m_glWidget->setPoints(points);
 }
 
