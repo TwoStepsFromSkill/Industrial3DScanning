@@ -41,7 +41,11 @@ Node* KDTree::buildKDTree(Point3d* rangeBegin, Point3d* rangeEnd, unsigned int d
 	childNode->ptrLastPoint = rangeEnd;
 
 	if (numPoints > 1)
-	{
+	{ 
+		if (numPoints % 2 != 0)
+		{
+			pointAtMedianPosition++;
+		}
 		childNode->leftChild = buildKDTree(rangeBegin, pointAtMedianPosition, depth + 1);
 		childNode->rightChild = buildKDTree(pointAtMedianPosition, rangeEnd, depth + 1);
 	}
