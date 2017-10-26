@@ -29,8 +29,7 @@ void MainWindow::openFile()
 
 	Node* tree = KDTree::buildKDTree(points.data(), points.data() + points.size(),0);
 
-	std::cout << tree->leftChild->ptrLastPoint - tree->leftChild->ptrFirstPoint << std::endl;
-	std::cout << tree->rightChild->ptrLastPoint - tree->rightChild->ptrFirstPoint << std::endl;
+	std::cout << "KDTree was created!" << std::endl;
 
     m_glWidget->setPoints(points);
 }

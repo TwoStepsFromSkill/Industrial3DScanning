@@ -5,11 +5,17 @@
 
 struct Node
 {
+	
 	double median;
 	Node* leftChild;
 	Node* rightChild;
 	Point3d* ptrFirstPoint;
 	Point3d* ptrLastPoint;
+	~Node()
+	{
+		delete leftChild;
+		delete rightChild;
+	}
 };
 
 class KDTree
