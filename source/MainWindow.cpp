@@ -4,6 +4,7 @@
 #include <QtWidgets/QFileDialog>
 
 #include <fstream>
+#include <limits>
 
 MainWindow::MainWindow()
 {
@@ -15,6 +16,11 @@ MainWindow::MainWindow()
 
     m_viewMenu = menuBar()->addMenu(tr("&View"));
     m_viewMenu->addAction("projection", this, SLOT(changeProjection()));
+
+    m_rangeMenu = menuBar()->addMenu(tr("&Query"));
+    m_rangeMenu->addAction("range query", this, SLOT(setRangeQuery()));
+
+    m_rangeDialog = new RangeQueryDialog(this);
 }
 
 void MainWindow::openFile()
@@ -24,14 +30,13 @@ void MainWindow::openFile()
 
     if (filenames.empty()) return;
 
-    std::vector<Point3d> points;
-    loadFileXYZ(filenames.front().toLocal8Bit(), points);
+    loadFileXYZ(filenames.front().toLocal8Bit(), m_points);
 
-	Node* tree = KDTree::buildKDTree(points.data(), points.data() + points.size(),0);
+	Node* tree = KDTree::buildKDTree(m_points.data(), m_points.data() + m_points.size(),0);
 
 	std::cout << "KDTree was created!" << std::endl;
 
-    m_glWidget->setPoints(points);
+    m_glWidget->setPoints(m_points);
 }
 
 void MainWindow::changeProjection()
@@ -46,6 +51,42 @@ void MainWindow::changeProjection()
         m_glWidget->camera().usePerspectiveProjection(true);
 
     m_glWidget->update();
+}
+
+void MainWindow::setRangeQuery()
+{
+    double xMin = std::numeric_limits<double>::max();
+    double xMax = std::numeric_limits<double>::lowest();
+    double yMin = std::numeric_limits<double>::max();
+    double yMax = std::numeric_limits<double>::lowest();
+    double zMin = std::numeric_limits<double>::max();
+    double zMax = std::numeric_limits<double>::lowest();
+
+    for (const auto& point : m_points)
+    {
+        xMin = point.x < xMin ? point.x : xMin;
+        xMax = point.x > xMax ? point.x : xMax;
+
+        yMin = point.y < yMin ? point.y : yMin;
+        yMax = point.y > yMax ? point.y : yMax;
+
+        zMin = point.z < zMin ? point.z : zMin;
+        zMax = point.z > zMax ? point.z : zMax;
+    }
+
+    m_rangeDialog->setValueRange(xMin, xMax, yMin, yMax, zMin, zMax);
+
+    if (m_rangeDialog->exec())
+    {
+        double xPos, yPos, zPos;
+        double dx, dy, dz;
+
+        m_rangeDialog->getPosition(xPos, yPos, zPos);
+        m_rangeDialog->getRange(dx, dy, dz);
+
+        std::cout << "Position: (" << xPos << ", " << yPos << ", " << zPos << ")\n";
+        std::cout << "Range: " << dx << ", " << dy << ", " << dz << "\n\n";
+    }
 }
 
 //Here is the implementation of our file reader

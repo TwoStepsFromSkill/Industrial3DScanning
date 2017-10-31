@@ -38,3 +38,4 @@ build*
 # do we need the "CMakeLists.txt.user" file?
 *.user
 .directory
+*.kdev4
