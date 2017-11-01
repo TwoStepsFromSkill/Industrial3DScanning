@@ -31,14 +31,14 @@ private:
 
     std::vector<Point3d> m_points;
 
+    Node* m_kdTree;
+
 signals:
     void drawingRangeResultChanged(bool);
 
 private:
     void loadFileXYZ(const char* filename, std::vector<Point3d>& points);
-
     void updateRangeQueryWidgetData();
-    std::vector<Point3d> updateRangeQuery();
 
 private slots:
     void openFile();

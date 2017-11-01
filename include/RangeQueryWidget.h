@@ -19,6 +19,8 @@ public:
                        double yMin, double yMax,
                        double zMin, double zMax);
 
+    void getBox(double* minMax);
+
 signals:
     void clickedEnable(bool value);
 

@@ -1,12 +1,16 @@
 #include "GLwidget.h"
 #include <GL/glu.h>
 #include <QtGui/QMouseEvent>
+#include <QSettings>
+#include <QVariant>
+#include <QFileInfo>
 
 #include <cmath>
 
 GLwidget::GLwidget(QWidget* parent)
     : QOpenGLWidget(parent)
     , m_points()
+    , m_pointsInRange()
     , m_mouseLastPos()
     , m_camera()
     , m_bbmin()
@@ -17,8 +21,9 @@ GLwidget::GLwidget(QWidget* parent)
     , m_rangeExtend()
     , m_drawRangeQueryBox(false)
     , m_drawRangeQueryResult(false)
-    , m_pointsInRange()
-{}
+{
+    loadDrawSettings();
+}
 
 void GLwidget::initializeGL()
 {
@@ -48,8 +53,8 @@ void GLwidget::paintGL()
     { /* Drawing Points with VertexArrays */
         glEnableClientState(GL_VERTEX_ARRAY);
 
-        glPointSize(2);
-        glColor3ub(255, 133, 0);
+        glPointSize(m_PC_size);
+        glColor3ubv(m_PC_color);
         glVertexPointer(3, GL_DOUBLE, sizeof(Point3d), &m_points[0]);
         glDrawArrays(GL_POINTS, 0, (unsigned int)m_points.size());
 
@@ -61,8 +66,8 @@ void GLwidget::paintGL()
     {
         // Draw range box
         glPushAttrib(GL_POLYGON_BIT);
-        glColor3ub(188, 217, 5);
-        glLineWidth(3.0f);
+        glColor3ubv(m_RQ_box_color);
+        glLineWidth(m_RQ_box_width);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
         glBegin(GL_QUADS);
@@ -94,12 +99,12 @@ void GLwidget::paintGL()
         // Draw points
         glEnableClientState(GL_VERTEX_ARRAY);
 
-        glPointSize(9);
-        glColor3ub(217, 22, 25);
+        glPointSize(m_RQ_result_size);
+        glColor3ubv(m_RQ_result_color);
         glVertexPointer(3, GL_DOUBLE, sizeof(Point3d), &m_pointsInRange[0]);
         glDrawArrays(GL_POINTS, 0, (unsigned int)m_pointsInRange.size());
 
-        glPointSize(2);
+        glPointSize(m_PC_size);
         glDisableClientState(GL_VERTEX_ARRAY);
     }
 
@@ -121,12 +126,17 @@ void GLwidget::drawingRangeQueryBoxChange(bool value)
 {
     m_drawRangeQueryBox = value;
     m_drawRangeQueryResult = value;
+
     this->repaint();
 }
 
 void GLwidget::drawingRangeQueryResultEnabled(bool value)
 {
     m_drawRangeQueryResult = value;
+
+    if (!value)
+        m_pointsInRange.clear();
+
     this->repaint();
 }
 
@@ -150,6 +160,74 @@ void GLwidget::rangeQueryExtendChanged(double dx, double dy, double dz)
     this->repaint();
 }
 
+void GLwidget::loadDrawSettings()
+{
+    QFileInfo check_file(QString("drawSettings.ini"));
+
+    if (!(check_file.exists() && check_file.isFile()))
+        std::cerr << "Could not find drawSettings.ini file in executable directory. Use default values!\n";
+
+    QSettings set(QString("drawSettings.ini"), QSettings::IniFormat);
+
+    m_PC_color[0] = set.value("PC_color_R", 255).value<unsigned char>();
+    m_PC_color[1] = set.value("PC_color_G", 141).value<unsigned char>();
+    m_PC_color[2] = set.value("PC_color_B", 42).value<unsigned char>();
+    m_PC_size = set.value("PC_size", 2).toInt();
+
+    m_RQ_box_color[0] = set.value("RQ_box_color_R", 188).value<unsigned char>();
+    m_RQ_box_color[1] = set.value("RQ_box_color_G", 217).value<unsigned char>();
+    m_RQ_box_color[2] = set.value("RQ_box_color_B", 5).value<unsigned char>();
+    m_RQ_box_width = set.value("RQ_box_width", 1.0).toDouble();
+
+    m_RQ_result_color[0] = set.value("RQ_result_color_R", 217).value<unsigned char>();
+    m_RQ_result_color[1] = set.value("RQ_result_color_G", 22).value<unsigned char>();
+    m_RQ_result_color[2] = set.value("RQ_result_color_B", 25).value<unsigned char>();
+    m_RQ_result_size = set.value("RQ_result_size", 2).toInt();
+
+    m_XAXIS_color[0] = set.value("XAXIS_color_R", 255).value<unsigned char>();
+    m_XAXIS_color[1] = set.value("XAXIS_color_G", 0).value<unsigned char>();
+    m_XAXIS_color[2] = set.value("XAXIS_color_B", 0).value<unsigned char>();
+
+    m_YAXIS_color[0] = set.value("YAXIS_color_R", 0).value<unsigned char>();
+    m_YAXIS_color[1] = set.value("YAXIS_color_G", 255).value<unsigned char>();
+    m_YAXIS_color[2] = set.value("YAXIS_color_B", 0).value<unsigned char>();
+
+    m_ZAXIS_color[0] = set.value("ZAXIS_color_R", 0).value<unsigned char>();
+    m_ZAXIS_color[1] = set.value("ZAXIS_color_G", 0).value<unsigned char>();
+    m_ZAXIS_color[2] = set.value("ZAXIS_color_B", 255).value<unsigned char>();
+    m_AXIS_width = set.value("AXIS_width", 1.0).toDouble();
+
+    m_CENTERSPHERE_color[0] = set.value("CENTERSPHERE_color_R", 255).value<unsigned char>();
+    m_CENTERSPHERE_color[1] = set.value("CENTERSPHERE_color_G", 255).value<unsigned char>();
+    m_CENTERSPHERE_color[2] = set.value("CENTERSPHERE_color_B", 0).value<unsigned char>();
+
+    m_XCIRCLE_color[0] = set.value("XCIRCLE_color_R", 255).value<unsigned char>();
+    m_XCIRCLE_color[1] = set.value("XCIRCLE_color_G", 0).value<unsigned char>();
+    m_XCIRCLE_color[2] = set.value("XCIRCLE_color_B", 0).value<unsigned char>();
+
+    m_YCIRCLE_color[0] = set.value("YCIRCLE_color_R", 0).value<unsigned char>();
+    m_YCIRCLE_color[1] = set.value("YCIRCLE_color_G", 255).value<unsigned char>();
+    m_YCIRCLE_color[2] = set.value("YCIRCLE_color_B", 0).value<unsigned char>();
+
+    m_ZCIRCLE_color[0] = set.value("ZCIRCLE_color_R", 0).value<unsigned char>();
+    m_ZCIRCLE_color[1] = set.value("ZCIRCLE_color_G", 0).value<unsigned char>();
+    m_ZCIRCLE_color[2] = set.value("ZCIRCLE_color_B", 255).value<unsigned char>();
+    m_CIRCLE_width = set.value("CIRCLE_width", 1.0).toDouble();
+
+    m_BB_color[0] = set.value("BB_color_R", 255).value<unsigned char>();
+    m_BB_color[1] = set.value("BB_color_G", 255).value<unsigned char>();
+    m_BB_color[2] = set.value("BB_color_B", 255).value<unsigned char>();
+    m_BB_width = set.value("BB_width", 1.0).toDouble();
+
+    m_BG_top_color[0] = set.value("BG_top_color_R", 100).value<unsigned char>();
+    m_BG_top_color[1] = set.value("BG_top_color_G", 100).value<unsigned char>();
+    m_BG_top_color[2] = set.value("BG_top_color_B", 100).value<unsigned char>();
+
+    m_BG_bottom_color[0] = set.value("BG_bottom_color_R", 38).value<unsigned char>();
+    m_BG_bottom_color[1] = set.value("BG_bottom_color_G", 38).value<unsigned char>();
+    m_BG_bottom_color[2] = set.value("BG_bottom_color_B", 38).value<unsigned char>();
+}
+
 void GLwidget::mousePressEvent(QMouseEvent * e)  ///<
 {
     if (e->buttons() == Qt::LeftButton)
@@ -158,8 +236,6 @@ void GLwidget::mousePressEvent(QMouseEvent * e)  ///<
 
 void GLwidget::mouseMoveEvent(QMouseEvent * e)   ///<
 {
-    //std::cout << e->pos().x() << "," << e->pos().y()<<std::endl;
-
     if (e->buttons() != Qt::LeftButton){ return; }
 
     //No action, if mouse position outside the window
@@ -191,13 +267,9 @@ void GLwidget::wheelEvent(QWheelEvent * e)
 
 void GLwidget::updateScene()
 {
-    //check how many points we have read from file
-    std::cout << "point vector contains: " << m_points.size() << " points" << std::endl;
-
     if (m_points.empty())
     {
-        std::cout << "ERROR: no points to show...(press enter to exit)" << std::endl;
-        getc(stdin);
+        return;
     }
 
     //OK, we now compute the min and max coordinates for our bounding box
@@ -226,9 +298,9 @@ void GLwidget::updateScene()
     m_bbmin=minPoint;
     m_bbmax=maxPoint;
 
-    std::cout << "\nBounding Box was computed:\n";
-    std::cout << "minPoint is: " << minPoint.x << "," << minPoint.y << "," << minPoint.z << std::endl;
-    std::cout << "maxPoint is: " << maxPoint.x << "," << maxPoint.y << "," << maxPoint.z << std::endl;
+//     std::cout << "\nBounding Box was computed:\n";
+//     std::cout << "minPoint is: " << minPoint.x << "," << minPoint.y << "," << minPoint.z << std::endl;
+//     std::cout << "maxPoint is: " << maxPoint.x << "," << maxPoint.y << "," << maxPoint.z << std::endl;
 
     makeCurrent();
     m_camera.initializeCamera(m_sceneCenter, m_sceneRadius); //set rotation center and scene radius to initially setup the camera
@@ -259,6 +331,7 @@ void GLwidget::drawCircle()
     const int segments = 180;
 
     glBegin(GL_LINE_LOOP);
+    glLineWidth(m_CIRCLE_width);
     for (int i = 0; i < segments; ++i)
     {
         const double theta = 2.0 * 3.1415926 * double(i) / double(segments);
@@ -272,23 +345,24 @@ void GLwidget::drawCoordinateAxes()
 {
     //draw coordinate frame
     glBegin(GL_LINES);
+    glLineWidth(m_AXIS_width);
     //draw line for X-Axis
-    glColor3ub(255, 0, 0);
+    glColor3ubv(m_XAXIS_color);
     glVertex3d(m_sceneCenter.x, m_sceneCenter.y, m_sceneCenter.z);
     glVertex3d(m_sceneCenter.x + m_sceneRadius, m_sceneCenter.y, m_sceneCenter.z);
     //draw line for Y-Axis
-    glColor3ub(0, 255, 0);
+    glColor3ubv(m_YAXIS_color);
     glVertex3d(m_sceneCenter.x, m_sceneCenter.y, m_sceneCenter.z);
     glVertex3d(m_sceneCenter.x, m_sceneCenter.y + m_sceneRadius, m_sceneCenter.z);
     //draw line for Z-Axis
-    glColor3ub(0, 0, 255);
+    glColor3ubv(m_ZAXIS_color);
     glVertex3d(m_sceneCenter.x, m_sceneCenter.y, m_sceneCenter.z);
     glVertex3d(m_sceneCenter.x, m_sceneCenter.y, m_sceneCenter.z + m_sceneRadius);
     glEnd();
 
     //draw center point as a sphere
     glPushMatrix();
-    glColor3ub(255, 255, 0);
+    glColor3ubv(m_CENTERSPHERE_color);
     glTranslated(m_sceneCenter.x, m_sceneCenter.y, m_sceneCenter.z);
     GLUquadric* quad = gluNewQuadric();
     gluSphere(quad, m_sceneRadius / 20, 30, 30);
@@ -296,16 +370,16 @@ void GLwidget::drawCoordinateAxes()
     glPopMatrix();
 
     glPushMatrix();
-    glColor3ub(0, 0, 255);
+    glColor3ubv(m_ZCIRCLE_color);
     glTranslated(m_sceneCenter.x, m_sceneCenter.y, m_sceneCenter.z);
     glScaled(m_sceneRadius, m_sceneRadius, m_sceneRadius);
     drawCircle();
     //draw another circle 90 degree rotated
     glRotated(90, 1, 0, 0);
-    glColor3ub(0, 255, 0);
+    glColor3ubv(m_YCIRCLE_color);
     drawCircle();
     glRotated(90, 0, 1, 0);
-    glColor3ub(255, 0, 0);
+    glColor3ubv(m_XCIRCLE_color);
     drawCircle();
     glPopMatrix();
 
@@ -320,11 +394,12 @@ void GLwidget::drawCoordinateAxes()
     //draw bounding box
     glPushMatrix();
     glPushAttrib(GL_POLYGON_BIT);
-    glColor3ub(255,255,255);
+    glColor3ubv(m_BB_color);
     Point3d S=m_bbmax-m_bbmin;
     glTranslated(m_bbmin.x, m_bbmin.y, m_bbmin.z);
     glScaled(S.x,S.y,S.z);
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); //draw wire frame instead of filled quads
+    glLineWidth(m_BB_width);
     drawBox();
     glPopAttrib();
     glPopMatrix();
@@ -359,9 +434,9 @@ void GLwidget::drawBackground()
     glLoadIdentity();
 
     glBegin(GL_QUADS);
-    glColor3ub(100,100,100); //color bottom
+    glColor3ubv(m_BG_bottom_color); //color bottom
     glVertex2f(0.0f, 0.0f);  glVertex2f(winWidth, 0.0f);
-    glColor3ub(38,38,38);  //color top
+    glColor3ubv(m_BG_top_color);  //color top
     glVertex2f(winWidth, winHeight);  glVertex2f(0.0f, winHeight);
     glEnd();
 

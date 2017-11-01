@@ -32,8 +32,11 @@ RangeQueryWidget::RangeQueryWidget(QWidget* parent)
     QGridLayout* positionLayout = new QGridLayout(this);
 
     QLabel* xLabel = new QLabel(QString("X"), this);
+    xLabel->setStyleSheet("QLabel { color : red; font-weight: bold }");
     QLabel* yLabel = new QLabel(QString("Y"), this);
+    yLabel->setStyleSheet("QLabel { color : green; font-weight: bold }");
     QLabel* zLabel = new QLabel(QString("Z"), this);
+    zLabel->setStyleSheet("QLabel { color : blue; font-weight: bold }");
 
     m_xValue = new QSlider(this);
     m_xValue->setMinimum(m_DEFAULT_SLIDER_MIN);
@@ -76,9 +79,12 @@ RangeQueryWidget::RangeQueryWidget(QWidget* parent)
 
     QGridLayout* rangeLayout = new QGridLayout(this);
 
-    QLabel* m_dxLabel = new QLabel(QString("X"), this);
-    QLabel* m_dyLabel = new QLabel(QString("Y"), this);
-    QLabel* m_dzLabel = new QLabel(QString("Z"), this);
+    QLabel* dxLabel = new QLabel(QString("X"), this);
+    dxLabel->setStyleSheet("QLabel { color : red; font-weight: bold }");
+    QLabel* dyLabel = new QLabel(QString("Y"), this);
+    dyLabel->setStyleSheet("QLabel { color : green; font-weight: bold }");
+    QLabel* dzLabel = new QLabel(QString("Z"), this);
+    dzLabel->setStyleSheet("QLabel { color : blue; font-weight: bold }");
 
     m_dxValue = new QSlider(this);
     m_dxValue->setMinimum(m_DEFAULT_SLIDER_MIN);
@@ -98,13 +104,13 @@ RangeQueryWidget::RangeQueryWidget(QWidget* parent)
     m_dzValue->setTickInterval(1);
     m_dzValue->setOrientation(Qt::Horizontal);
 
-    rangeLayout->addWidget(m_dxLabel, 0, 0);
+    rangeLayout->addWidget(dxLabel, 0, 0);
     rangeLayout->addWidget(m_dxValue, 0, 1);
 
-    rangeLayout->addWidget(m_dyLabel, 1, 0);
+    rangeLayout->addWidget(dyLabel, 1, 0);
     rangeLayout->addWidget(m_dyValue, 1, 1);
 
-    rangeLayout->addWidget(m_dzLabel, 2, 0);
+    rangeLayout->addWidget(dzLabel, 2, 0);
     rangeLayout->addWidget(m_dzValue, 2, 1);
 
     m_rangeLabel = new QLabel(QString("dx dy dz"), this);
@@ -180,6 +186,18 @@ void RangeQueryWidget::resetValueRange(double xMin, double xMax, double yMin, do
     emit hidePressed();
     emit centerChanged(getXValue(), getYValue(), getZValue());
     emit extendChanged(getXRange(), getYRange(), getZRange());
+}
+
+void RangeQueryWidget::getBox(double* minMax)
+{
+    minMax[0] = getXValue() - (getXRange() / 2.0);
+    minMax[1] = getXValue() + (getXRange() / 2.0);
+
+    minMax[2] = getYValue() - (getYRange() / 2.0);
+    minMax[3] = getYValue() + (getYRange() / 2.0);
+
+    minMax[4] = getZValue() - (getZRange() / 2.0);
+    minMax[5] = getZValue() + (getZRange() / 2.0);
 }
 
 void RangeQueryWidget::positionChanged(int)

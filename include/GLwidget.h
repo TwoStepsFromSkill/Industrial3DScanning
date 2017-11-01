@@ -42,6 +42,9 @@ public slots:
     void rangeQueryExtendChanged(double dx, double dy, double dz);
 
 private:
+    void loadDrawSettings();
+    void writeSettings();
+
     void  mousePressEvent(QMouseEvent * e);  ///<
     void  mouseMoveEvent (QMouseEvent * e);  ///<
     void  wheelEvent     (QWheelEvent * e);  ///<
@@ -52,7 +55,10 @@ private:
     void drawCoordinateAxes();  ///< draws the coordinate system
     void drawBackground();      ///< draws the scene background
 
+    void updateRangeQueryBoxData();
+
     std::vector<Point3d> m_points;    //point data
+    std::vector<Point3d> m_pointsInRange;
 
     QPoint               m_mouseLastPos;  //last mouse position clicked
 
@@ -61,6 +67,7 @@ private:
     Point3d   m_sceneCenter;    //center of the scene
     double    m_sceneRadius;    //radius of the scene
 
+    // Range query
     Point3d m_rangeCenter;
     Point3d m_rangeExtend;
     bool m_drawRangeQueryBox;
@@ -76,9 +83,33 @@ private:
     double m_btl[3];
     double m_btr[3];
 
-    std::vector<Point3d> m_pointsInRange;
+    // Colors and draw settings
+    unsigned char m_PC_color[3];
+    int m_PC_size;
 
-    void updateRangeQueryBoxData();
+    unsigned char m_RQ_box_color[3];
+    double m_RQ_box_width;
+
+    unsigned char m_RQ_result_color[3];
+    int m_RQ_result_size;
+
+    unsigned char m_XAXIS_color[3];
+    unsigned char m_YAXIS_color[3];
+    unsigned char m_ZAXIS_color[3];
+    double m_AXIS_width;
+
+    unsigned char m_CENTERSPHERE_color[3];
+
+    unsigned char m_XCIRCLE_color[3];
+    unsigned char m_YCIRCLE_color[3];
+    unsigned char m_ZCIRCLE_color[3];
+    double m_CIRCLE_width;
+
+    unsigned char m_BB_color[3];
+    double m_BB_width;
+
+    unsigned char m_BG_top_color[3];
+    unsigned char m_BG_bottom_color[3];
 };
 
 #endif
