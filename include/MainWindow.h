@@ -5,9 +5,12 @@
 #include "GLwidget.h"
 #include "Point3d.h"
 #include "KDTree.h"
-#include "RangeQueryDialog.h"
 
 #include <vector>
+
+class QHBoxLayout;
+class QTabWidget;
+class RangeQueryWidget;
 
 class MainWindow : public QMainWindow
 {
@@ -19,19 +22,30 @@ public:
 private:
     QMenu*    m_fileMenu;
     QMenu*    m_viewMenu;
-    QMenu*    m_rangeMenu;
-    RangeQueryDialog* m_rangeDialog;
+
+    QHBoxLayout* m_mainLayout;
     GLwidget* m_glWidget;
 
+    QTabWidget* m_tabWidget;
+    RangeQueryWidget* m_rangeWidget;
+
     std::vector<Point3d> m_points;
+
+signals:
+    void drawingRangeResultChanged(bool);
 
 private:
     void loadFileXYZ(const char* filename, std::vector<Point3d>& points);
 
+    void updateRangeQueryWidgetData();
+    std::vector<Point3d> updateRangeQuery();
+
 private slots:
     void openFile();
     void changeProjection();
-    void setRangeQuery();
+
+    void applyRangePressed();
+    void hideRangePressed();
 };
 
 #endif

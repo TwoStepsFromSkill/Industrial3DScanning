@@ -4,6 +4,22 @@
 
 #include <cmath>
 
+GLwidget::GLwidget(QWidget* parent)
+    : QOpenGLWidget(parent)
+    , m_points()
+    , m_mouseLastPos()
+    , m_camera()
+    , m_bbmin()
+    , m_bbmax()
+    , m_sceneCenter()
+    , m_sceneRadius()
+    , m_rangeCenter()
+    , m_rangeExtend()
+    , m_drawRangeQueryBox(false)
+    , m_drawRangeQueryResult(false)
+    , m_pointsInRange()
+{}
+
 void GLwidget::initializeGL()
 {
     glMatrixMode(GL_MODELVIEW);
@@ -27,8 +43,6 @@ void GLwidget::paintGL()
     //draws the scene background
     drawBackground();
 
-    glEnable(GL_DEPTH_TEST);
-
     //Draw pointclouds
     if (!m_points.empty())
     { /* Drawing Points with VertexArrays */
@@ -42,43 +56,98 @@ void GLwidget::paintGL()
         glDisableClientState(GL_VERTEX_ARRAY);
     }
 
+
+    if (m_drawRangeQueryBox)
+    {
+        // Draw range box
+        glPushAttrib(GL_POLYGON_BIT);
+        glColor3ub(188, 217, 5);
+        glLineWidth(3.0f);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+        glBegin(GL_QUADS);
+            glVertex3d(m_fbl[0], m_fbl[1], m_fbl[2]); glVertex3d(m_fbr[0], m_fbr[1], m_fbr[2]);
+            glVertex3d(m_ftr[0], m_ftr[1], m_ftr[2]); glVertex3d(m_ftl[0], m_ftl[1], m_ftl[2]);  // front
+
+            glVertex3d(m_bbl[0], m_bbl[1], m_bbl[2]); glVertex3d(m_bbr[0], m_bbr[1], m_bbr[2]);
+            glVertex3d(m_btr[0], m_btr[1], m_btr[2]); glVertex3d(m_btl[0], m_btl[1], m_btl[2]);  // back
+
+            glVertex3d(m_fbl[0], m_fbl[1], m_fbl[2]); glVertex3d(m_fbr[0], m_fbr[1], m_fbr[2]);
+            glVertex3d(m_bbr[0], m_bbr[1], m_bbr[2]); glVertex3d(m_bbl[0], m_bbl[1], m_bbl[2]);  // bottom
+
+            glVertex3d(m_ftl[0], m_ftl[1], m_ftl[2]); glVertex3d(m_ftr[0], m_ftr[1], m_ftr[2]);
+            glVertex3d(m_btr[0], m_btr[1], m_btr[2]); glVertex3d(m_btl[0], m_btl[1], m_btl[2]);  // top
+
+            glVertex3d(m_ftl[0], m_ftl[1], m_ftl[2]); glVertex3d(m_fbl[0], m_fbl[1], m_fbl[2]);
+            glVertex3d(m_bbl[0], m_bbl[1], m_bbl[2]); glVertex3d(m_btl[0], m_btl[1], m_btl[2]);  // left
+
+            glVertex3d(m_ftr[0], m_ftr[1], m_ftr[2]); glVertex3d(m_fbr[0], m_fbr[1], m_fbr[2]);
+            glVertex3d(m_bbr[0], m_bbr[1], m_bbr[2]); glVertex3d(m_btr[0], m_btr[1], m_btr[2]);  // right
+
+        glEnd();
+        glLineWidth(1.0f);
+        glPopAttrib();
+    }
+
+    if (m_drawRangeQueryResult)
+    {
+        // Draw points
+        glEnableClientState(GL_VERTEX_ARRAY);
+
+        glPointSize(9);
+        glColor3ub(217, 22, 25);
+        glVertexPointer(3, GL_DOUBLE, sizeof(Point3d), &m_pointsInRange[0]);
+        glDrawArrays(GL_POINTS, 0, (unsigned int)m_pointsInRange.size());
+
+        glPointSize(2);
+        glDisableClientState(GL_VERTEX_ARRAY);
+    }
+
+    glEnable(GL_DEPTH_TEST);
+
     //draw coordinate frame
     drawCoordinateAxes();
 
-    //glBegin(GL_LINES);
-    //  glColor3ub(255, 0, 0);
-    //  glVertex3d(m_sceneCenter.x, m_sceneCenter.y, m_sceneCenter.z);
-    //  glVertex3d(m_sceneCenter.x + m_sceneRadius, m_sceneCenter.y, m_sceneCenter.z);
-    //  glColor3ub(0, 255, 0);
-    //  glVertex3d(m_sceneCenter.x, m_sceneCenter.y, m_sceneCenter.z);
-    //  glVertex3d(m_sceneCenter.x, m_sceneCenter.y + m_sceneRadius, m_sceneCenter.z);
-    //  glColor3ub(0, 0, 255);
-    //  glVertex3d(m_sceneCenter.x, m_sceneCenter.y, m_sceneCenter.z);
-    //  glVertex3d(m_sceneCenter.x, m_sceneCenter.y, m_sceneCenter.z + m_sceneRadius);
-    //glEnd();
-
-    ////draw bounding box
-    //glPushMatrix();
-    //glPushAttrib(GL_POLYGON_BIT);
-    //  glColor3ub(255,255,255);
-    //  Point3d S=m_bbmax-m_bbmin;
-    //  glTranslated(m_bbmin.x, m_bbmin.y, m_bbmin.z);
-    //  glScaled(S.x,S.y,S.z);
-    //  glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); //draw wire frame instead of filled quads
-    //  drawBox();
-    //glPopAttrib();
-    //glPopMatrix();
-
-    ////draw scene center point as a sphere
-    //glPushMatrix();
-    //  glColor3ub(255, 255, 0);
-    //  glTranslated(m_sceneCenter.x, m_sceneCenter.y, m_sceneCenter.z);
-    //  GLUquadric* quad = gluNewQuadric();
-    //  gluSphere(quad, m_sceneRadius / 20, 30, 30);
-    //  gluDeleteQuadric(quad);
-    //glPopMatrix();
-
     update();
+}
+
+void  GLwidget::setPointsInRange(const std::vector<Point3d>& points)
+{
+    m_pointsInRange = points;
+    this->repaint();
+}
+
+void GLwidget::drawingRangeQueryBoxChange(bool value)
+{
+    m_drawRangeQueryBox = value;
+    m_drawRangeQueryResult = value;
+    this->repaint();
+}
+
+void GLwidget::drawingRangeQueryResultEnabled(bool value)
+{
+    m_drawRangeQueryResult = value;
+    this->repaint();
+}
+
+void GLwidget::rangeQueryCenterChanged(double x, double y, double z)
+{
+    m_rangeCenter.x = x;
+    m_rangeCenter.y = y;
+    m_rangeCenter.z = z;
+
+    updateRangeQueryBoxData();
+    this->repaint();
+}
+
+void GLwidget::rangeQueryExtendChanged(double dx, double dy, double dz)
+{
+    m_rangeExtend.x = dx;
+    m_rangeExtend.y = dy;
+    m_rangeExtend.z = dz;
+
+    updateRangeQueryBoxData();
+    this->repaint();
 }
 
 void GLwidget::mousePressEvent(QMouseEvent * e)  ///<
@@ -303,4 +372,43 @@ void GLwidget::drawBackground()
     glPopMatrix();  //reset ModelviewMatrix to last state
 
     glPopAttrib();  //restore last attributes
+}
+
+void GLwidget::updateRangeQueryBoxData()
+{
+    // Front
+
+    m_fbl[0] = m_rangeCenter.x - (m_rangeExtend.x / 2.0);
+    m_fbl[1] = m_rangeCenter.y - (m_rangeExtend.y / 2.0);
+    m_fbl[2] = m_rangeCenter.z - (m_rangeExtend.z / 2.0);
+
+    m_fbr[0] = m_rangeCenter.x + (m_rangeExtend.x / 2.0);
+    m_fbr[1] = m_rangeCenter.y - (m_rangeExtend.y / 2.0);
+    m_fbr[2] = m_rangeCenter.z - (m_rangeExtend.z / 2.0);
+
+    m_ftl[0] = m_rangeCenter.x - (m_rangeExtend.x / 2.0);
+    m_ftl[1] = m_rangeCenter.y - (m_rangeExtend.y / 2.0);
+    m_ftl[2] = m_rangeCenter.z + (m_rangeExtend.z / 2.0);
+
+    m_ftr[0] = m_rangeCenter.x + (m_rangeExtend.x / 2.0);
+    m_ftr[1] = m_rangeCenter.y - (m_rangeExtend.y / 2.0);
+    m_ftr[2] = m_rangeCenter.z + (m_rangeExtend.z / 2.0);
+
+    // Back
+
+    m_bbl[0] = m_rangeCenter.x - (m_rangeExtend.x / 2.0);
+    m_bbl[1] = m_rangeCenter.y + (m_rangeExtend.y / 2.0);
+    m_bbl[2] = m_rangeCenter.z - (m_rangeExtend.z / 2.0);
+
+    m_bbr[0] = m_rangeCenter.x + (m_rangeExtend.x / 2.0);
+    m_bbr[1] = m_rangeCenter.y + (m_rangeExtend.y / 2.0);
+    m_bbr[2] = m_rangeCenter.z - (m_rangeExtend.z / 2.0);
+
+    m_btl[0] = m_rangeCenter.x - (m_rangeExtend.x / 2.0);
+    m_btl[1] = m_rangeCenter.y + (m_rangeExtend.y / 2.0);
+    m_btl[2] = m_rangeCenter.z + (m_rangeExtend.z / 2.0);
+
+    m_btr[0] = m_rangeCenter.x + (m_rangeExtend.x / 2.0);
+    m_btr[1] = m_rangeCenter.y + (m_rangeExtend.y / 2.0);
+    m_btr[2] = m_rangeCenter.z + (m_rangeExtend.z / 2.0);
 }

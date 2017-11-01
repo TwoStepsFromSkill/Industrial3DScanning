@@ -6,5 +6,5 @@ set(SOURCE
     ${CMAKE_CURRENT_SOURCE_DIR}/OpenGL_App_QT.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Point3d.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/KDTree.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/RangeQueryDialog.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/RangeQueryWidget.cpp
     PARENT_SCOPE)
