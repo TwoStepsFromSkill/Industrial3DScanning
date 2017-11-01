@@ -126,15 +126,15 @@ void queryRange_impl(Node* tree, const double minMax[6], unsigned int depth, std
 
             ++start;
         }
+
+        return;
     }
 
-    auto recursiveDown = [&minMax, &tree, &out](unsigned int dimension)
-    {
-        if (minMax[dimension*2] <= tree->median)
-            queryRange_impl(tree->leftChild, minMax, dimension + 1, out);
-        if (minMax[dimension*2 + 1] > tree->median)
-            queryRange_impl(tree->rightChild, minMax, dimension + 1, out);
-    };
+    unsigned int dimension = depth % 3;
 
-    recursiveDown(depth % 3);
+    if (minMax[dimension*2] <= tree->median)
+        queryRange_impl(tree->leftChild, minMax, dimension + 1, out);
+    if (minMax[dimension*2 + 1] > tree->median)
+        queryRange_impl(tree->rightChild, minMax, dimension + 1, out);
+
 }
