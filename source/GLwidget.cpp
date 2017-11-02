@@ -94,7 +94,7 @@ void GLwidget::paintGL()
         glPopAttrib();
     }
 
-    if (m_drawRangeQueryResult)
+    if (m_drawRangeQueryResult && !m_pointsInRange.empty())
     {
         // Draw points
         glEnableClientState(GL_VERTEX_ARRAY);
