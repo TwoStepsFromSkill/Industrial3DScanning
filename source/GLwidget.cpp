@@ -184,6 +184,16 @@ void GLwidget::loadDrawSettings()
     m_RQ_result_color[2] = set.value("RQ_result_color_B", 25).value<unsigned char>();
     m_RQ_result_size = set.value("RQ_result_size", 2).toInt();
 
+    m_NN_query_color[0] = set.value("NN_query_color_R", 255).value<unsigned char>();
+    m_NN_query_color[1] = set.value("NN_query_color_G", 0).value<unsigned char>();
+    m_NN_query_color[2] = set.value("NN_query_color_B", 255).value<unsigned char>();
+    m_NN_query_size = set.value("NN_query_size", 5).toInt();
+
+    m_NN_result_color[0] = set.value("NN_result_color_R", 0).value<unsigned char>();
+    m_NN_result_color[1] = set.value("NN_result_color_G", 0).value<unsigned char>();
+    m_NN_result_color[2] = set.value("NN_result_color_B", 255).value<unsigned char>();
+    m_NN_result_size = set.value("NN_result_size", 5).toInt();
+
     m_XAXIS_color[0] = set.value("XAXIS_color_R", 255).value<unsigned char>();
     m_XAXIS_color[1] = set.value("XAXIS_color_G", 0).value<unsigned char>();
     m_XAXIS_color[2] = set.value("XAXIS_color_B", 0).value<unsigned char>();
@@ -219,22 +229,22 @@ void GLwidget::loadDrawSettings()
     m_BB_color[2] = set.value("BB_color_B", 255).value<unsigned char>();
     m_BB_width = set.value("BB_width", 1.0).toDouble();
 
-    m_BG_top_color[0] = set.value("BG_top_color_R", 100).value<unsigned char>();
-    m_BG_top_color[1] = set.value("BG_top_color_G", 100).value<unsigned char>();
-    m_BG_top_color[2] = set.value("BG_top_color_B", 100).value<unsigned char>();
+    m_BG_top_color[0] = set.value("BG_top_color_R", 38).value<unsigned char>();
+    m_BG_top_color[1] = set.value("BG_top_color_G", 38).value<unsigned char>();
+    m_BG_top_color[2] = set.value("BG_top_color_B", 38).value<unsigned char>();
 
-    m_BG_bottom_color[0] = set.value("BG_bottom_color_R", 38).value<unsigned char>();
-    m_BG_bottom_color[1] = set.value("BG_bottom_color_G", 38).value<unsigned char>();
-    m_BG_bottom_color[2] = set.value("BG_bottom_color_B", 38).value<unsigned char>();
+    m_BG_bottom_color[0] = set.value("BG_bottom_color_R", 100).value<unsigned char>();
+    m_BG_bottom_color[1] = set.value("BG_bottom_color_G", 100).value<unsigned char>();
+    m_BG_bottom_color[2] = set.value("BG_bottom_color_B", 100).value<unsigned char>();
 }
 
-void GLwidget::mousePressEvent(QMouseEvent * e)  ///<
+void GLwidget::mousePressEvent(QMouseEvent * e)
 {
     if (e->buttons() == Qt::LeftButton)
         m_mouseLastPos = e->pos();
 }
 
-void GLwidget::mouseMoveEvent(QMouseEvent * e)   ///<
+void GLwidget::mouseMoveEvent(QMouseEvent * e)
 {
     if (e->buttons() != Qt::LeftButton){ return; }
 
@@ -247,7 +257,8 @@ void GLwidget::mouseMoveEvent(QMouseEvent * e)   ///<
     if (m_mouseLastPos == mouseCurrentPos) return;
 
     makeCurrent();
-    m_camera.rotate(m_mouseLastPos.x(), m_mouseLastPos.y(), mouseCurrentPos.x(), mouseCurrentPos.y());
+    m_camera.rotate(m_mouseLastPos.x(), m_mouseLastPos.y(),
+                    mouseCurrentPos.x(), mouseCurrentPos.y());
 
     //the current mouse position is the last mouse position for the next interaction
     m_mouseLastPos = mouseCurrentPos;
@@ -278,7 +289,7 @@ void GLwidget::updateScene()
 
     for (unsigned int i = 0; i < m_points.size(); ++i)
     {
-        const Point3d& pt = m_points[i]; //do not copy but get a reference to the i-th point in the vector
+        const Point3d& pt = m_points[i];
         if (pt.x < minPoint.x) minPoint.x = pt.x;
         else if (pt.x > maxPoint.x) maxPoint.x = pt.x;
 
@@ -298,13 +309,11 @@ void GLwidget::updateScene()
     m_bbmin=minPoint;
     m_bbmax=maxPoint;
 
-//     std::cout << "\nBounding Box was computed:\n";
-//     std::cout << "minPoint is: " << minPoint.x << "," << minPoint.y << "," << minPoint.z << std::endl;
-//     std::cout << "maxPoint is: " << maxPoint.x << "," << maxPoint.y << "," << maxPoint.z << std::endl;
-
     makeCurrent();
-    m_camera.initializeCamera(m_sceneCenter, m_sceneRadius); //set rotation center and scene radius to initially setup the camera
-    m_camera.updateProjection(); //updateProjection to make the new point cloud fit to the screen
+    //set rotation center and scene radius to initially setup the camera
+    m_camera.initializeCamera(m_sceneCenter, m_sceneRadius);
+    //updateProjection to make the new point cloud fit to the screen
+    m_camera.updateProjection();
 }
 
 /** draws a unit box.
@@ -382,14 +391,6 @@ void GLwidget::drawCoordinateAxes()
     glColor3ubv(m_XCIRCLE_color);
     drawCircle();
     glPopMatrix();
-
-    //draw a disk to indicate the scene radius
-    /*glPushMatrix();
-  glColor3ub(255, 0, 255);
-  glTranslated(m_sceneCenter.x, m_sceneCenter.y, m_sceneCenter.z);
-  GLUquadric* quad2 = gluNewQuadric();
-  gluDisk(quad2, m_sceneRadius, m_sceneRadius*1.001, 100, 100);
-  gluDeleteQuadric(quad2);*/
 
     //draw bounding box
     glPushMatrix();

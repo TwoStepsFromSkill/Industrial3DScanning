@@ -1,4 +1,4 @@
-#include "RangeQueryWidget.h"
+#include "NearestNeighboorWidget.h"
 
 #include <QLabel>
 #include <QDoubleSpinBox>
@@ -12,14 +12,16 @@
 #include <QGroupBox>
 #include <QCheckBox>
 
-RangeQueryWidget::RangeQueryWidget(QWidget* parent)
+#include <iostream>
+
+NearestNeighboorWidget::NearestNeighboorWidget(QWidget* parent)
     : BaseTabWidget(parent)
 {
     m_dummyLayout = new QVBoxLayout(this);
     m_dummyLayout->setContentsMargins(0, 0, 0, 0);
     m_mainWidget = new QGroupBox(this);
     m_mainWidget->setCheckable(true);
-    m_mainWidget->setTitle(QString("Range Query"));
+    m_mainWidget->setTitle(QString("Nearest Neighboor"));
     m_dummyLayout->addWidget(m_mainWidget);
 
     m_mainLayout = new QVBoxLayout(this);
@@ -70,54 +72,6 @@ RangeQueryWidget::RangeQueryWidget(QWidget* parent)
 
     m_mainLayout->addLayout(positionLayout);
 
-    QSpacerItem* sectionSpacer = new QSpacerItem(1, 20, QSizePolicy::Fixed, QSizePolicy::Fixed);
-    m_mainLayout->addItem(sectionSpacer);
-
-    QLabel* rangeSectionHeader = new QLabel(QString("Range of the query region:"), this);
-    rangeSectionHeader->setStyleSheet("font-weight: bold");
-    m_mainLayout->addWidget(rangeSectionHeader);
-
-    QGridLayout* rangeLayout = new QGridLayout(this);
-
-    QLabel* dxLabel = new QLabel(QString("X"), this);
-    dxLabel->setStyleSheet("QLabel { color : red; font-weight: bold }");
-    QLabel* dyLabel = new QLabel(QString("Y"), this);
-    dyLabel->setStyleSheet("QLabel { color : green; font-weight: bold }");
-    QLabel* dzLabel = new QLabel(QString("Z"), this);
-    dzLabel->setStyleSheet("QLabel { color : blue; font-weight: bold }");
-
-    m_dxValue = new QSlider(this);
-    m_dxValue->setMinimum(m_DEFAULT_SLIDER_MIN);
-    m_dxValue->setMaximum(m_DEFAULT_SLIDER_MAX);
-    m_dxValue->setTickInterval(1);
-    m_dxValue->setOrientation(Qt::Horizontal);
-
-    m_dyValue = new QSlider(this);
-    m_dyValue->setMinimum(m_DEFAULT_SLIDER_MIN);
-    m_dyValue->setMaximum(m_DEFAULT_SLIDER_MAX);
-    m_dyValue->setTickInterval(1);
-    m_dyValue->setOrientation(Qt::Horizontal);
-
-    m_dzValue = new QSlider(this);
-    m_dzValue->setMinimum(m_DEFAULT_SLIDER_MIN);
-    m_dzValue->setMaximum(m_DEFAULT_SLIDER_MAX);
-    m_dzValue->setTickInterval(1);
-    m_dzValue->setOrientation(Qt::Horizontal);
-
-    rangeLayout->addWidget(dxLabel, 0, 0);
-    rangeLayout->addWidget(m_dxValue, 0, 1);
-
-    rangeLayout->addWidget(dyLabel, 1, 0);
-    rangeLayout->addWidget(m_dyValue, 1, 1);
-
-    rangeLayout->addWidget(dzLabel, 2, 0);
-    rangeLayout->addWidget(m_dzValue, 2, 1);
-
-    m_rangeLabel = new QLabel(QString("dx dy dz"), this);
-    rangeLayout->addWidget(m_rangeLabel, 3, 0, 1, 2);
-
-    m_mainLayout->addLayout(rangeLayout);
-
     QSpacerItem* buttonSpacer = new QSpacerItem(1, 20, QSizePolicy::Fixed, QSizePolicy::Fixed);
     m_mainLayout->addItem(buttonSpacer);
 
@@ -137,15 +91,11 @@ RangeQueryWidget::RangeQueryWidget(QWidget* parent)
 
     setLayout(m_dummyLayout);
 
-    connect(m_mainWidget, SIGNAL(toggled(bool)), this, SIGNAL(widgetEnabled(bool)));
+    connect(m_mainWidget, SIGNAL(clicked(bool)), this, SIGNAL(clickedEnable(bool)));
 
     connect(m_xValue, SIGNAL(valueChanged(int)), this, SLOT(positionChanged(int)));
     connect(m_yValue, SIGNAL(valueChanged(int)), this, SLOT(positionChanged(int)));
     connect(m_zValue, SIGNAL(valueChanged(int)), this, SLOT(positionChanged(int)));
-
-    connect(m_dxValue, SIGNAL(valueChanged(int)), this, SLOT(rangeChanged(int)));
-    connect(m_dyValue, SIGNAL(valueChanged(int)), this, SLOT(rangeChanged(int)));
-    connect(m_dzValue, SIGNAL(valueChanged(int)), this, SLOT(rangeChanged(int)));
 
     connect(m_liveUpdate, SIGNAL(stateChanged(int)), this, SLOT(liveUpdateStateChanged(int)));
 
@@ -153,8 +103,19 @@ RangeQueryWidget::RangeQueryWidget(QWidget* parent)
     connect(m_buttonHide, SIGNAL(pressed()), this, SLOT(hidePress()));
 }
 
-void RangeQueryWidget::resetValueRange(double xMin, double xMax, double yMin, double yMax,
-                                       double zMin, double zMax)
+void NearestNeighboorWidget::deactivate()
+{
+    std::cerr << "Called deactivate in NearestNeighboorWidget\n";
+    m_mainWidget->setChecked(false);
+}
+
+void NearestNeighboorWidget::activate()
+{
+    std::cerr << "Called activate in NearestNeighboorWidget\n";
+    m_mainWidget->setChecked(true);
+}
+
+void NearestNeighboorWidget::resetValueRange(double xMin, double xMax, double yMin, double yMax, double zMin, double zMax)
 {
     m_xValueRange[0] = xMin;
     m_xValueRange[1] = xMax;
@@ -165,17 +126,8 @@ void RangeQueryWidget::resetValueRange(double xMin, double xMax, double yMin, do
     m_zValueRange[0] = zMin;
     m_zValueRange[1] = zMax;
 
-    m_dxValueRange[0] = 0;
-    m_dxValueRange[1] = xMax - xMin;
-
-    m_dyValueRange[0] = 0;
-    m_dyValueRange[1] = yMax - yMin;
-
-    m_dzValueRange[0] = 0;
-    m_dzValueRange[1] = zMax - zMin;
 
     updatePositionLabel();
-    updateRangeLabel();
 
     blockSliders(true);
 
@@ -183,52 +135,19 @@ void RangeQueryWidget::resetValueRange(double xMin, double xMax, double yMin, do
     m_yValue->setValue(0);
     m_zValue->setValue(0);
 
-    m_dxValue->setValue(m_INITIAL_RANGE_VALUE);
-    m_dyValue->setValue(m_INITIAL_RANGE_VALUE);
-    m_dzValue->setValue(m_INITIAL_RANGE_VALUE);
-
     blockSliders(false);
 
     emit hidePressed();
     emit centerChanged(getXValue(), getYValue(), getZValue());
-    emit extendChanged(getXRange(), getYRange(), getZRange());
 }
 
-void RangeQueryWidget::getBox(double* minMax)
-{
-    minMax[0] = getXValue() - (getXRange() / 2.0);
-    minMax[1] = getXValue() + (getXRange() / 2.0);
-
-    minMax[2] = getYValue() - (getYRange() / 2.0);
-    minMax[3] = getYValue() + (getYRange() / 2.0);
-
-    minMax[4] = getZValue() - (getZRange() / 2.0);
-    minMax[5] = getZValue() + (getZRange() / 2.0);
-}
-
-void RangeQueryWidget::deactivate()
-{
-    m_mainWidget->setChecked(false);
-}
-
-void RangeQueryWidget::activate()
-{
-    m_mainWidget->setChecked(true);
-}
-
-void RangeQueryWidget::positionChanged(int)
+void NearestNeighboorWidget::positionChanged(int)
 {
     updatePositionLabel();
     emit centerChanged(getXValue(), getYValue(), getZValue());
 }
 
-void RangeQueryWidget::rangeChanged(int)
-{
-    updateRangeLabel();
-    emit extendChanged(getXRange(), getYRange(), getZRange());
-}
-
-void RangeQueryWidget::liveUpdateStateChanged(int state)
+void NearestNeighboorWidget::liveUpdateStateChanged(int state)
 {
     if (state == Qt::Unchecked)
     {
@@ -240,70 +159,44 @@ void RangeQueryWidget::liveUpdateStateChanged(int state)
     }
 }
 
-void RangeQueryWidget::hidePress()
+void NearestNeighboorWidget::hidePress()
 {
     m_liveUpdate->setChecked(false);
     emit hidePressed();
 }
 
-double RangeQueryWidget::getXValue() const
+double NearestNeighboorWidget::getXValue() const
 {
     return getValue(m_xValue->value(), m_xValueRange);
 }
 
-double RangeQueryWidget::getYValue() const
+double NearestNeighboorWidget::getYValue() const
 {
     return getValue(m_yValue->value(), m_yValueRange);
 }
 
-double RangeQueryWidget::getZValue() const
+double NearestNeighboorWidget::getZValue() const
 {
     return getValue(m_zValue->value(), m_zValueRange);
 }
 
-double RangeQueryWidget::getXRange() const
-{
-    return getValue(m_dxValue->value(), m_dxValueRange);
-}
-
-double RangeQueryWidget::getYRange() const
-{
-    return getValue(m_dyValue->value(), m_dyValueRange);
-}
-
-double RangeQueryWidget::getZRange() const
-{
-    return getValue(m_dzValue->value(), m_dzValueRange);
-}
-
-double RangeQueryWidget::getValue(int position, const double range[2]) const
+double NearestNeighboorWidget::getValue(int position, const double range[2]) const
 {
     double factor = (static_cast<double>(position) - m_DEFAULT_SLIDER_MIN)
                     / (m_DEFAULT_SLIDER_MAX - m_DEFAULT_SLIDER_MIN);
     return (1.0 - factor)*range[0] + factor*range[1];
 }
 
-void RangeQueryWidget::blockSliders(bool value)
+void NearestNeighboorWidget::blockSliders(bool value)
 {
     m_xValue->blockSignals(value);
     m_yValue->blockSignals(value);
     m_zValue->blockSignals(value);
-
-    m_dxValue->blockSignals(value);
-    m_dyValue->blockSignals(value);
-    m_dzValue->blockSignals(value);
 }
 
-void RangeQueryWidget::updatePositionLabel()
+void NearestNeighboorWidget::updatePositionLabel()
 {
     m_positionLabel->setText(QString("X: %1 \nY: %2 \nZ: %3").arg(QString::number(getXValue()),
                                                                   QString::number(getYValue()),
                                                                   QString::number(getZValue())));
-}
-
-void RangeQueryWidget::updateRangeLabel()
-{
-    m_rangeLabel->setText(QString("X: %1 \nY: %2 \nZ: %3").arg(QString::number(getXRange()),
-                                                               QString::number(getYRange()),
-                                                               QString::number(getZRange())));
 }

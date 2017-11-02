@@ -7,4 +7,5 @@ set(SOURCE
     ${CMAKE_CURRENT_SOURCE_DIR}/Point3d.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/KDTree.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/RangeQueryWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/NearestNeighboorWidget.cpp
     PARENT_SCOPE)

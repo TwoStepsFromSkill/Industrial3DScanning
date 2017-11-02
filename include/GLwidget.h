@@ -83,6 +83,12 @@ private:
     double m_btl[3];
     double m_btr[3];
 
+    // Nearest Neighboor
+    Point3d m_nearestQueryPoint;
+    Point3d m_nearestPoint;
+    bool m_drawNearestQueryPoint;
+    bool m_drawNearestQueryResult;
+
     // Colors and draw settings
     unsigned char m_PC_color[3];
     int m_PC_size;
@@ -92,6 +98,12 @@ private:
 
     unsigned char m_RQ_result_color[3];
     int m_RQ_result_size;
+
+    unsigned char m_NN_query_color[3];
+    int m_NN_query_size;
+
+    unsigned char m_NN_result_color[3];
+    int m_NN_result_size;
 
     unsigned char m_XAXIS_color[3];
     unsigned char m_YAXIS_color[3];

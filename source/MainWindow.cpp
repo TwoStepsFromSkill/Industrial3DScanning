@@ -11,13 +11,18 @@
 #include <limits>
 #include <chrono>
 
+#include "BaseTabWidget.h"
 #include "RangeQueryWidget.h"
+#include "NearestNeighboorWidget.h"
 
 using duration_micro = std::chrono::duration<double, std::micro>;
 using duration_milli = std::chrono::duration<double, std::milli>;
 
 MainWindow::MainWindow()
-    : m_kdTree(nullptr)
+    : m_liveUpdateRangeQuery(false)
+    , m_liveUpdateNearestNeighboor(false)
+    , m_points()
+    , m_kdTree(nullptr)
 {
     m_mainLayout = new QHBoxLayout(this);
 
@@ -26,12 +31,15 @@ MainWindow::MainWindow()
     m_mainLayout->addWidget(m_glWidget);
 
     m_tabWidget = new QTabWidget(this);
-    m_rangeWidget = new RangeQueryWidget(this);
-
-    m_tabWidget->addTab(m_rangeWidget, QString("Range"));
     m_tabWidget->setTabPosition(QTabWidget::East);
     m_tabWidget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
     m_tabWidget->setEnabled(false);
+
+    m_rangeWidget = new RangeQueryWidget(this);
+    m_tabWidget->addTab(m_rangeWidget, QString("Range Query"));
+
+    m_nearestWidget = new NearestNeighboorWidget(this);
+    m_tabWidget->addTab(m_nearestWidget, QString("Nearest Neighboor"));
 
     m_mainLayout->addWidget(m_tabWidget);
 
@@ -46,15 +54,31 @@ MainWindow::MainWindow()
     m_viewMenu = menuBar()->addMenu(tr("&View"));
     m_viewMenu->addAction("projection", this, SLOT(changeProjection()));
 
-    connect(m_rangeWidget, SIGNAL(clickedEnable(bool)), m_glWidget, SLOT(drawingRangeQueryBoxChange(bool)));
+    // TabWidget section
+    connect(m_tabWidget, SIGNAL(currentChanged(int)), this, SLOT(tabSwitched(int)));
+
+    // RangeQueryWidget section
+    connect(m_rangeWidget, SIGNAL(widgetEnabled(bool)),
+            m_glWidget, SLOT(drawingRangeQueryBoxChange(bool)));
 
     connect(m_rangeWidget, SIGNAL(centerChanged(double, double, double)),
-            m_glWidget, SLOT(rangeQueryCenterChanged(double, double, double)));
+            this, SLOT(rangeQueryCenterChanged(double, double, double)));
     connect(m_rangeWidget, SIGNAL(extendChanged(double, double, double)),
+            this, SLOT(rangeQueryExtendChanged(double, double, double)));
+
+    connect(this, SIGNAL(rangeQueryCenterChange(double, double, double)),
+            m_glWidget, SLOT(rangeQueryCenterChanged(double, double, double)));
+    connect(this, SIGNAL(rangeQueryExtendChange(double, double, double)),
             m_glWidget, SLOT(rangeQueryExtendChanged(double, double, double)));
-    connect(m_rangeWidget, SIGNAL(applyPressed()), this, SLOT(applyRangePressed()));
-    connect(m_rangeWidget, SIGNAL(hidePressed()), this , SLOT(hideRangePressed()));
-    connect(this, SIGNAL(drawingRangeResultChanged(bool)), m_glWidget, SLOT(drawingRangeQueryResultEnabled(bool)));
+
+    connect(m_rangeWidget, SIGNAL(liveUpdateChanged(bool)),
+            this, SLOT(rangeQueryLiveUpdateChange(bool)));
+
+    connect(m_rangeWidget, SIGNAL(applyPressed()), this, SLOT(applyRangeQueryPressed()));
+    connect(m_rangeWidget, SIGNAL(hidePressed()), this , SLOT(hideRangeQueryPressed()));
+
+    connect(this, SIGNAL(drawingRangeQueryResultChanged(bool)),
+            m_glWidget, SLOT(drawingRangeQueryResultEnabled(bool)));
 }
 
 void MainWindow::openFile()
@@ -82,7 +106,8 @@ void MainWindow::openFile()
 
     m_glWidget->setPoints(m_points);
     m_tabWidget->setEnabled(true);
-    updateRangeQueryWidgetData();
+
+    updateSidebarWidgetData();
     m_glWidget->drawingRangeQueryBoxChange(true);
 }
 
@@ -96,6 +121,17 @@ void MainWindow::changeProjection()
         m_glWidget->camera().usePerspectiveProjection(true);
 
     m_glWidget->update();
+}
+
+void MainWindow::tabSwitched(int index)
+{
+    for (int i = 0; i < m_tabWidget->count(); ++i)
+    {
+        if (i != index)
+           static_cast<BaseTabWidget*>(m_tabWidget->widget(i))->deactivate();
+        else
+            static_cast<BaseTabWidget*>(m_tabWidget->widget(i))->activate();
+    }
 }
 
 void MainWindow::loadFileXYZ(const char* filename, std::vector<Point3d>& points)
@@ -119,7 +155,7 @@ void MainWindow::loadFileXYZ(const char* filename, std::vector<Point3d>& points)
     file.close();
 }
 
-void MainWindow::updateRangeQueryWidgetData()
+void MainWindow::updateSidebarWidgetData()
 {
     double xMin = std::numeric_limits<double>::max();
     double xMax = std::numeric_limits<double>::lowest();
@@ -141,26 +177,57 @@ void MainWindow::updateRangeQueryWidgetData()
     }
 
     m_rangeWidget->resetValueRange(xMin, xMax, yMin, yMax, zMin, zMax);
+    m_nearestWidget->resetValueRange(xMin, xMax, yMin, yMax, zMin, zMax);
 }
 
-void MainWindow::applyRangePressed()
+void MainWindow::rangeQueryCenterChanged(double x, double y, double z)
 {
-    if (m_kdTree)
+    emit rangeQueryCenterChange(x, y, z);
+
+    if (m_liveUpdateRangeQuery)
     {
-        double range[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-        m_rangeWidget->getBox(&range[0]);
-
-        auto startTime = std::chrono::system_clock::now();
-            auto points = queryRange(m_kdTree, range);
-        duration_micro elapsed = std::chrono::system_clock::now() - startTime;
-        std::cout << "Queried KDTree! Found " << points.size() << " poinst! Took [" << elapsed.count() << "µs]\n";
-
-        m_glWidget->setPointsInRange(points);
-        emit drawingRangeResultChanged(true);
+        computeAndVisualizeRangeQuery();
     }
 }
 
-void MainWindow::hideRangePressed()
+void MainWindow::rangeQueryExtendChanged(double dx, double dy, double dz)
 {
-    emit drawingRangeResultChanged(false);
+    emit rangeQueryExtendChange(dx, dy, dz);
+
+    if (m_liveUpdateRangeQuery)
+    {
+        computeAndVisualizeRangeQuery();
+    }
+}
+
+void MainWindow::rangeQueryLiveUpdateChange(bool value)
+{
+    m_liveUpdateRangeQuery = value;
+}
+
+void MainWindow::applyRangeQueryPressed()
+{
+    if (m_kdTree)
+    {
+        computeAndVisualizeRangeQuery();
+    }
+}
+
+void MainWindow::hideRangeQueryPressed()
+{
+    emit drawingRangeQueryResultChanged(false);
+}
+
+void MainWindow::computeAndVisualizeRangeQuery()
+{
+    double range[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    m_rangeWidget->getBox(&range[0]);
+
+    auto startTime = std::chrono::system_clock::now();
+    auto points = queryRange(m_kdTree, range);
+    duration_micro elapsed = std::chrono::system_clock::now() - startTime;
+    std::cout << "Queried KDTree! Found " << points.size() << " poinst! Took [" << elapsed.count() << "µs]\n";
+
+    m_glWidget->setPointsInRange(points);
+    emit drawingRangeQueryResultChanged(true);
 }
