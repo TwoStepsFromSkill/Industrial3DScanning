@@ -22,14 +22,14 @@ RangeQueryWidget::RangeQueryWidget(QWidget* parent)
     m_mainWidget->setTitle(QString("Range Query"));
     m_dummyLayout->addWidget(m_mainWidget);
 
-    m_mainLayout = new QVBoxLayout(this);
+    m_mainLayout = new QVBoxLayout();
     m_mainWidget->setLayout(m_mainLayout);
 
     QLabel* positionSectionHeader = new QLabel(QString("Position of query point:"), this);
     positionSectionHeader->setStyleSheet("font-weight: bold");
     m_mainLayout->addWidget(positionSectionHeader);
 
-    QGridLayout* positionLayout = new QGridLayout(this);
+    QGridLayout* positionLayout = new QGridLayout();
 
     QLabel* xLabel = new QLabel(QString("X"), this);
     xLabel->setStyleSheet("QLabel { color : red; font-weight: bold }");
@@ -77,7 +77,7 @@ RangeQueryWidget::RangeQueryWidget(QWidget* parent)
     rangeSectionHeader->setStyleSheet("font-weight: bold");
     m_mainLayout->addWidget(rangeSectionHeader);
 
-    QGridLayout* rangeLayout = new QGridLayout(this);
+    QGridLayout* rangeLayout = new QGridLayout();
 
     QLabel* dxLabel = new QLabel(QString("X"), this);
     dxLabel->setStyleSheet("QLabel { color : red; font-weight: bold }");
@@ -124,7 +124,7 @@ RangeQueryWidget::RangeQueryWidget(QWidget* parent)
     m_liveUpdate = new QCheckBox(QString("Live Update"), this);
     m_mainLayout->addWidget(m_liveUpdate);
 
-    QHBoxLayout* buttonLayout = new QHBoxLayout(this);
+    QHBoxLayout* buttonLayout = new QHBoxLayout();
 
     m_buttonApply = new QPushButton(QString("Apply"), this);
     m_buttonHide = new QPushButton(QString("Hide"), this);

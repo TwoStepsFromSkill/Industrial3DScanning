@@ -11,7 +11,7 @@
 class QHBoxLayout;
 class QTabWidget;
 class RangeQueryWidget;
-class NearestNeighboorWidget;
+class NearestNeighborWidget;
 
 class MainWindow : public QMainWindow
 {
@@ -32,8 +32,8 @@ private:
     RangeQueryWidget* m_rangeWidget;
     bool m_liveUpdateRangeQuery;
 
-    NearestNeighboorWidget* m_nearestWidget;
-    bool m_liveUpdateNearestNeighboor;
+    NearestNeighborWidget* m_nearestWidget;
+    bool m_liveUpdateNearestNeighbor;
 
     std::vector<Point3d> m_points;
     Node* m_kdTree;

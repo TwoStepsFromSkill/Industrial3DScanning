@@ -13,18 +13,18 @@
 
 #include "BaseTabWidget.h"
 #include "RangeQueryWidget.h"
-#include "NearestNeighboorWidget.h"
+#include "NearestNeighborWidget.h"
 
 using duration_micro = std::chrono::duration<double, std::micro>;
 using duration_milli = std::chrono::duration<double, std::milli>;
 
 MainWindow::MainWindow()
     : m_liveUpdateRangeQuery(false)
-    , m_liveUpdateNearestNeighboor(false)
+    , m_liveUpdateNearestNeighbor(false)
     , m_points()
     , m_kdTree(nullptr)
 {
-    m_mainLayout = new QHBoxLayout(this);
+    m_mainLayout = new QHBoxLayout();
 
     m_glWidget = new GLwidget();
     m_glWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -38,7 +38,7 @@ MainWindow::MainWindow()
     m_rangeWidget = new RangeQueryWidget(this);
     m_tabWidget->addTab(m_rangeWidget, QString("Range Query"));
 
-    m_nearestWidget = new NearestNeighboorWidget(this);
+    m_nearestWidget = new NearestNeighborWidget(this);
     m_tabWidget->addTab(m_nearestWidget, QString("Nearest Neighboor"));
 
     m_mainLayout->addWidget(m_tabWidget);
