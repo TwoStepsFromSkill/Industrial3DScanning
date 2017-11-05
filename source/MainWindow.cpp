@@ -49,10 +49,13 @@ MainWindow::MainWindow()
     setCentralWidget(centralWidget);
 
     m_fileMenu = menuBar()->addMenu(tr("&File"));
-    m_fileMenu->addAction("open",this,SLOT(openFile()));
+    m_fileMenu->addAction("Open XYZ-File", this, SLOT(openFile()));
 
     m_viewMenu = menuBar()->addMenu(tr("&View"));
-    m_viewMenu->addAction("projection", this, SLOT(changeProjection()));
+    m_viewMenu->addAction("Toggle Projection", this, SLOT(changeProjection()));
+    m_viewMenu->addAction("Reload draw settings", this, SIGNAL(reloadDrawSettings()));
+
+    connect(this, SIGNAL(reloadDrawSettings()), m_glWidget, SLOT(reloadDrawSettings()));
 
     // TabWidget section
     connect(m_tabWidget, SIGNAL(currentChanged(int)), this, SLOT(tabSwitched(int)));
@@ -79,6 +82,30 @@ MainWindow::MainWindow()
 
     connect(this, SIGNAL(drawingRangeQueryResultChanged(bool)),
             m_glWidget, SLOT(drawingRangeQueryResultEnabled(bool)));
+    connect(this, SIGNAL(rangeQueryResultChange(std::vector<Point3d>)),
+            m_glWidget, SLOT(rangeQueryResultChanged(std::vector<Point3d>)));
+
+    // NearestNeighborWidget section
+    connect(m_nearestWidget, SIGNAL(widgetEnabled(bool)),
+            m_glWidget, SLOT(drawingNearestNeighborQueryPointChanged(bool)));
+
+    connect(m_nearestWidget, SIGNAL(positionChange(double, double, double)),
+            this, SLOT(nearestNeighborQueryPointChanged(double, double, double)));
+    connect(this, SIGNAL(nearestNeighborQueryPointChange(const Point3d&)),
+            m_glWidget, SLOT(nearestNeighborQueryPointChanged(const Point3d&)));
+
+    connect(m_nearestWidget, SIGNAL(liveUpdateChanged(bool)),
+            this, SLOT(nearestNeighborLiveUpdateChange(bool)));
+
+    connect(m_nearestWidget, SIGNAL(applyPressed()), this, SLOT(applyNearestNeighborPressed()));
+    connect(m_nearestWidget, SIGNAL(hidePressed()), this , SLOT(hideNearestNeighborPressed()));
+
+    connect(this, SIGNAL(drawingNearestNeighborResultChanged(bool)),
+            m_glWidget, SLOT(drawingNearestNeighborResultPointChanged(bool)));
+    connect(this, SIGNAL(nearestNeighborResultPointChange(const Point3d&)),
+            m_glWidget, SLOT(nearestNeighborResultPointChanged(const Point3d&)));
+
+    m_rangeWidget->activate();
 }
 
 void MainWindow::openFile()
@@ -228,6 +255,40 @@ void MainWindow::computeAndVisualizeRangeQuery()
     duration_micro elapsed = std::chrono::system_clock::now() - startTime;
     std::cout << "Queried KDTree! Found " << points.size() << " poinst! Took [" << elapsed.count() << "µs]\n";
 
-    m_glWidget->setPointsInRange(points);
+    emit rangeQueryResultChange(points);
     emit drawingRangeQueryResultChanged(true);
+}
+
+void MainWindow::nearestNeighborQueryPointChanged(double x, double y, double z)
+{
+    emit nearestNeighborQueryPointChange(Point3d(x, y, z));
+
+    if (m_liveUpdateRangeQuery)
+    {
+        computeAndVisualizeNearestNeighbor();
+    }
+}
+
+void MainWindow::nearestNeighborLiveUpdateChange(bool value)
+{
+    m_liveUpdateNearestNeighbor = value;
+}
+
+void MainWindow::applyNearestNeighborPressed()
+{
+    if (m_kdTree)
+    {
+        computeAndVisualizeNearestNeighbor();
+    }
+}
+
+void MainWindow::hideNearestNeighborPressed()
+{
+    emit drawingNearestNeighborResultChanged(false);
+}
+
+void MainWindow::computeAndVisualizeNearestNeighbor()
+{
+//     emit nearestNeighborResultPointChange(Point3d(0, 0, 0));
+//     emit drawingNearestNeighborResultChanged(true);
 }

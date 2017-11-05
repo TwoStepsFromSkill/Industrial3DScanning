@@ -91,7 +91,7 @@ NearestNeighborWidget::NearestNeighborWidget(QWidget* parent)
 
     setLayout(m_dummyLayout);
 
-    connect(m_mainWidget, SIGNAL(clicked(bool)), this, SIGNAL(clickedEnable(bool)));
+    connect(m_mainWidget, SIGNAL(toggled(bool)), this, SIGNAL(widgetEnabled(bool)));
 
     connect(m_xValue, SIGNAL(valueChanged(int)), this, SLOT(positionChanged(int)));
     connect(m_yValue, SIGNAL(valueChanged(int)), this, SLOT(positionChanged(int)));
@@ -101,17 +101,17 @@ NearestNeighborWidget::NearestNeighborWidget(QWidget* parent)
 
     connect(m_buttonApply, SIGNAL(pressed()), this, SIGNAL(applyPressed()));
     connect(m_buttonHide, SIGNAL(pressed()), this, SLOT(hidePress()));
+
+    deactivate();
 }
 
 void NearestNeighborWidget::deactivate()
 {
-    std::cerr << "Called deactivate in NearestNeighborWidget\n";
     m_mainWidget->setChecked(false);
 }
 
 void NearestNeighborWidget::activate()
 {
-    std::cerr << "Called activate in NearestNeighborWidget\n";
     m_mainWidget->setChecked(true);
 }
 
@@ -138,13 +138,13 @@ void NearestNeighborWidget::resetValueRange(double xMin, double xMax, double yMi
     blockSliders(false);
 
     emit hidePressed();
-    emit centerChanged(getXValue(), getYValue(), getZValue());
+    emit positionChange(getXValue(), getYValue(), getZValue());
 }
 
 void NearestNeighborWidget::positionChanged(int)
 {
     updatePositionLabel();
-    emit centerChanged(getXValue(), getYValue(), getZValue());
+    emit positionChange(getXValue(), getYValue(), getZValue());
 }
 
 void NearestNeighborWidget::liveUpdateStateChanged(int state)

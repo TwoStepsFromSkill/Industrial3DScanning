@@ -39,13 +39,23 @@ private:
     Node* m_kdTree;
 
 signals:
+    void reloadDrawSettings();
+
     void drawingRangeQueryResultChanged(bool);
     void rangeQueryCenterChange(double, double, double);
     void rangeQueryExtendChange(double, double, double);
+    void rangeQueryResultChange(std::vector<Point3d>);
+
+    void drawingNearestNeighborResultChanged(bool);
+    void nearestNeighborQueryPointChange(const Point3d&);
+    void nearestNeighborResultPointChange(const Point3d&);
 
 private:
     void loadFileXYZ(const char* filename, std::vector<Point3d>& points);
     void updateSidebarWidgetData();
+
+    void computeAndVisualizeRangeQuery();
+    void computeAndVisualizeNearestNeighbor();
 
 private slots:
     void openFile();
@@ -53,6 +63,7 @@ private slots:
 
     void tabSwitched(int);
 
+    // Range query
     void rangeQueryCenterChanged(double, double, double);
     void rangeQueryExtendChanged(double, double, double);
 
@@ -61,7 +72,12 @@ private slots:
     void applyRangeQueryPressed();
     void hideRangeQueryPressed();
 
-    void computeAndVisualizeRangeQuery();
+    // Nearest neighbor
+    void nearestNeighborQueryPointChanged(double, double, double);
+    void nearestNeighborLiveUpdateChange(bool value);
+
+    void applyNearestNeighborPressed();
+    void hideNearestNeighborPressed();
 };
 
 #endif

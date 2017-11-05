@@ -25,9 +25,9 @@ public:
     virtual void activate() override;
 
 signals:
-    void clickedEnable(bool value);
+    void widgetEnabled(bool value);
 
-    void centerChanged(double x, double y, double z);
+    void positionChange(double x, double y, double z);
 
     void liveUpdateChanged(bool value);
 

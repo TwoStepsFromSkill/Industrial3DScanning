@@ -151,6 +151,8 @@ RangeQueryWidget::RangeQueryWidget(QWidget* parent)
 
     connect(m_buttonApply, SIGNAL(pressed()), this, SIGNAL(applyPressed()));
     connect(m_buttonHide, SIGNAL(pressed()), this, SLOT(hidePress()));
+
+    deactivate();
 }
 
 void RangeQueryWidget::resetValueRange(double xMin, double xMax, double yMin, double yMax,
