@@ -141,6 +141,13 @@ void NearestNeighborWidget::resetValueRange(double xMin, double xMax, double yMi
     emit positionChange(getXValue(), getYValue(), getZValue());
 }
 
+void NearestNeighborWidget::getQueryPoint(double* data)
+{
+    data[0] = getXValue();
+    data[1] = getYValue();
+    data[2] = getZValue();
+}
+
 void NearestNeighborWidget::positionChanged(int)
 {
     updatePositionLabel();

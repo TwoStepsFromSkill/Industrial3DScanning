@@ -19,7 +19,7 @@ struct Node
 
 struct KDTree
 {
-	static Node* buildKDTree(Point3d* rangeBegin, Point3d* rangeEnd, unsigned intdepth);
+	static Node* buildKDTree(Point3d* rangeBegin, Point3d* rangeEnd, unsigned int depth);
 
 	static bool sortByXvalue(const Point3d& p1, const Point3d& p2);
 	static bool sortByYvalue(const Point3d& p1, const Point3d& p2);
@@ -27,6 +27,11 @@ struct KDTree
 };
 
 std::vector<Point3d> queryRange(Node* tree, const double minMax[6]);
-void queryRange_impl(Node* tree, const double minMax[6], unsigned int depth, std::vector<Point3d>& out);
+void queryRange_impl(Node* tree, const double minMax[6], unsigned int depth,
+                     std::vector<Point3d>& out);
+
+Point3d nearestNeighbor_daniel(Node* tree, const Point3d& queryPoint);
+void nearestNeighbor_daniel_impl(Node* tree, const double* queryPoint, double* minDist,
+                                       Point3d* minPoint, unsigned int depth);
 
 #endif // KD_TREE_H

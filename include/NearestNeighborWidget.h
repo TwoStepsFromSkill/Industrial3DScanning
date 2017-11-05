@@ -21,6 +21,8 @@ public:
                        double yMin, double yMax,
                        double zMin, double zMax);
 
+    void getQueryPoint(double* data);
+
     virtual void deactivate() override;
     virtual void activate() override;
 

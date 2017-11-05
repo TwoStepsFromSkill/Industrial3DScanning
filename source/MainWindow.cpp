@@ -263,7 +263,7 @@ void MainWindow::nearestNeighborQueryPointChanged(double x, double y, double z)
 {
     emit nearestNeighborQueryPointChange(Point3d(x, y, z));
 
-    if (m_liveUpdateRangeQuery)
+    if (m_liveUpdateNearestNeighbor)
     {
         computeAndVisualizeNearestNeighbor();
     }
@@ -289,6 +289,14 @@ void MainWindow::hideNearestNeighborPressed()
 
 void MainWindow::computeAndVisualizeNearestNeighbor()
 {
-//     emit nearestNeighborResultPointChange(Point3d(0, 0, 0));
-//     emit drawingNearestNeighborResultChanged(true);
+    double xyz[3];
+    m_nearestWidget->getQueryPoint(xyz);
+
+    auto startTime = std::chrono::system_clock::now();
+    Point3d res = nearestNeighbor_daniel(m_kdTree, Point3d(xyz[0], xyz[1], xyz[2]));
+    duration_micro elapsed = std::chrono::system_clock::now() - startTime;
+    std::cout << "Found NearestNeighbor! Took [" << elapsed.count() << "µs]\n";
+
+    emit nearestNeighborResultPointChange(res);
+    emit drawingNearestNeighborResultChanged(true);
 }

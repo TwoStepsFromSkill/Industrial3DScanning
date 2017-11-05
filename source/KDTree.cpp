@@ -1,6 +1,8 @@
 #include "KDTree.h"
 
 #include <algorithm>
+#include <limits>
+#include <cmath>
 
 Node::Node()
     : median(0)
@@ -126,15 +128,72 @@ void queryRange_impl(Node* tree, const double minMax[6], unsigned int depth, std
 
             ++start;
         }
-
-        return;
     }
+    else
+    {
+        unsigned int dimension = depth % 3;
 
-    unsigned int dimension = depth % 3;
+        if (minMax[dimension*2] <= tree->median)
+            queryRange_impl(tree->leftChild, minMax, dimension + 1, out);
+        if (minMax[dimension*2 + 1] > tree->median)
+            queryRange_impl(tree->rightChild, minMax, dimension + 1, out);
+    }
+}
 
-    if (minMax[dimension*2] <= tree->median)
-        queryRange_impl(tree->leftChild, minMax, dimension + 1, out);
-    if (minMax[dimension*2 + 1] > tree->median)
-        queryRange_impl(tree->rightChild, minMax, dimension + 1, out);
+Point3d nearestNeighbor_daniel(Node* tree, const Point3d& queryPoint)
+{
+    double minDist = std::numeric_limits<double>::max();
+    Point3d minPoint(std::numeric_limits<double>::lowest(),
+                     std::numeric_limits<double>::lowest(),
+                     std::numeric_limits<double>::lowest());
+    double query[3] = {queryPoint.x, queryPoint.y, queryPoint.z};
 
+    nearestNeighbor_daniel_impl(tree, query, &minDist, &minPoint, 0);
+    return minPoint;
+}
+
+void nearestNeighbor_daniel_impl(Node* tree, const double* queryPoint, double* minDist,
+                                       Point3d* minPoint, unsigned int depth)
+{
+    if (!tree)
+        return;
+
+    if (!tree->leftChild && !tree->rightChild)
+    {
+        auto* start = tree->ptrFirstPoint;
+
+        while (start != tree->ptrLastPoint)
+        {
+            Point3d pt = *start;
+            double dist = std::sqrt(sqr(pt.x - queryPoint[0])
+                                    + sqr(pt.y - queryPoint[1])
+                                    + sqr(pt.z - queryPoint[2]));
+            if (dist < *minDist)
+            {
+                *minDist = dist;
+                *minPoint = pt;
+            }
+
+            ++start;
+        }
+    }
+    else
+    {
+        unsigned int dim = depth % 3;
+
+        if (queryPoint[dim] <= tree->median)
+        {
+            nearestNeighbor_daniel_impl(tree->leftChild, queryPoint, minDist, minPoint, depth + 1);
+
+            if ((queryPoint[dim] + *minDist) > tree->median)
+                nearestNeighbor_daniel_impl(tree->rightChild, queryPoint, minDist, minPoint, depth + 1);
+        }
+        else
+        {
+            nearestNeighbor_daniel_impl(tree->rightChild, queryPoint, minDist, minPoint, depth + 1);
+
+            if ((queryPoint[dim] - *minDist) <= tree->median)
+                nearestNeighbor_daniel_impl(tree->leftChild, queryPoint, minDist, minPoint, depth + 1);
+        }
+    }
 }
