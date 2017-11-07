@@ -29,4 +29,8 @@ struct KDTree
 std::vector<Point3d> queryRange(Node* tree, const double minMax[6]);
 void queryRange_impl(Node* tree, const double minMax[6], unsigned int depth, std::vector<Point3d>& out);
 
+Point3d findNearestPoint_Elke(Node* tree);
+void findNearestPointRecursiveley_Elke(Node* tree, double* currDist, unsigned int depth, Point3d* currentPoint);
+void insertGivenPoint(Node* tree, double* currDist, unsigned int depth, Point3d* currentPoint);
+double getDimension(Point3d point, unsigned int depth);
 #endif // KD_TREE_H

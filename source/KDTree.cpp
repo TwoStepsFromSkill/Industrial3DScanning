@@ -18,6 +18,8 @@ Node::~Node()
         delete rightChild;
 }
 
+Point3d* givenPoint = new Point3d(0.0010,0.0347,-0.0236);
+
 Node* KDTree::buildKDTree(Point3d* rangeBegin, Point3d* rangeEnd, unsigned int depth)
 {
 	//compute how many points there are in the given range
@@ -138,3 +140,102 @@ void queryRange_impl(Node* tree, const double minMax[6], unsigned int depth, std
         queryRange_impl(tree->rightChild, minMax, dimension + 1, out);
 
 }
+
+Point3d findNearestPoint_Elke(Node* tree)
+{	
+	Point3d currentPoint = *tree->ptrFirstPoint;
+	double currDist = distance3d(currentPoint, *givenPoint);
+	//givenPoint = new Point3d(0.9, 0.9, 0.9);
+	
+	insertGivenPoint(tree, &currDist, 0, &currentPoint);
+	findNearestPointRecursiveley_Elke(tree, &currDist,0,&currentPoint);
+
+	return currentPoint;
+}
+
+void findNearestPointRecursiveley_Elke(Node* tree, double* currDist, unsigned int depth, Point3d* currentPoint)
+{
+	// Stepped to deep
+	if (!tree)
+		return;
+
+	unsigned int dimension = depth % 3;
+	double givenPointDimension = getDimension(*givenPoint, depth);
+	double distToMedian = givenPointDimension - tree->median;
+
+	// If leaf reached -> Check left child
+	if (!tree->leftChild && !tree->rightChild)
+	{		
+		if (distance3d(*tree->ptrFirstPoint, *givenPoint) < *currDist)
+		{
+			*currDist = distance3d(*tree->ptrFirstPoint, *givenPoint);
+			*currentPoint = *tree->ptrFirstPoint;
+		}
+		return;
+	}
+	
+	// givenPoint is actually on the left side of the tree
+	if (distToMedian <= 0)
+	{
+		findNearestPointRecursiveley(tree->leftChild, currDist, depth + 1, currentPoint);
+		if (*currDist > abs(distToMedian))
+		{
+			findNearestPointRecursiveley(tree->rightChild, currDist, depth + 1, currentPoint);
+		}
+	}
+	else 
+	{
+		findNearestPointRecursiveley(tree->rightChild, currDist, depth + 1, currentPoint);
+		if (*currDist > abs(distToMedian))
+		{
+			findNearestPointRecursiveley(tree->leftChild, currDist, depth + 1, currentPoint);
+		}		
+	}	
+}
+
+void insertGivenPoint(Node* tree, double* currDist, unsigned int depth, Point3d* currentPoint)
+{
+	if (!tree->leftChild && !tree->rightChild)
+	{
+		currentPoint = tree->ptrFirstPoint;
+		*currDist = distance3d(*currentPoint, *givenPoint);
+		return;
+	}
+	else
+	{
+		unsigned int dimension = depth % 3;
+		double givenPointDimension = getDimension(*givenPoint, depth);
+		if (tree->median <= givenPointDimension)
+		{
+			depth++;
+			GivenPoint(tree->leftChild, currDist, depth, currentPoint);
+		}
+		else
+		{
+			depth++;
+			GivenPoint(tree->rightChild, currDist, depth, currentPoint);
+		}
+	}
+}
+
+double getDimension(Point3d point, unsigned int depth)
+{
+	unsigned int dimension = depth % 3;
+	double currentPosition = 0;
+	switch (dimension)
+	{
+	case 0:
+		currentPosition = point.x;
+		break;
+	case 1:
+		currentPosition = point.y;
+		break;
+	case 2:
+		currentPosition = point.z;
+		break;
+	default:
+		break;
+	}
+	return currentPosition;
+}
+
