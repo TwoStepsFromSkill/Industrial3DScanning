@@ -149,9 +149,54 @@ Point3d nearestNeighbor_daniel(Node* tree, const Point3d& queryPoint)
                      std::numeric_limits<double>::lowest(),
                      std::numeric_limits<double>::lowest());
     double query[3] = {queryPoint.x, queryPoint.y, queryPoint.z};
-
+	nearestNeighbor_daniel_impl(tree, query, &minDist, &minPoint, 0);
+	return minPoint;
 }
+void nearestNeighbor_daniel_impl(Node* tree, const double* queryPoint, double* minDist,
+	Point3d* minPoint, unsigned int depth)
+{
+	if (!tree)
+		return;
 
+	if (!tree->leftChild && !tree->rightChild)
+	{
+		auto* start = tree->ptrFirstPoint;
+
+		while (start != tree->ptrLastPoint)
+		{
+			Point3d pt = *start;
+			double dist = std::sqrt(sqr(pt.x - queryPoint[0])
+				+ sqr(pt.y - queryPoint[1])
+				+ sqr(pt.z - queryPoint[2]));
+			if (dist < *minDist)
+			{
+				*minDist = dist;
+				*minPoint = pt;
+			}
+
+			++start;
+		}
+	}
+	else
+	{
+		unsigned int dim = depth % 3;
+
+		if (queryPoint[dim] <= tree->median)
+		{
+			nearestNeighbor_daniel_impl(tree->leftChild, queryPoint, minDist, minPoint, depth + 1);
+
+			if ((queryPoint[dim] + *minDist) > tree->median)
+				nearestNeighbor_daniel_impl(tree->rightChild, queryPoint, minDist, minPoint, depth + 1);
+		}
+		else
+		{
+			nearestNeighbor_daniel_impl(tree->rightChild, queryPoint, minDist, minPoint, depth + 1);
+
+			if ((queryPoint[dim] - *minDist) <= tree->median)
+				nearestNeighbor_daniel_impl(tree->leftChild, queryPoint, minDist, minPoint, depth + 1);
+		}
+	}
+}
 Point3d findNearestPoint_Elke(Node* tree)
 {	
 	Point3d currentPoint = *tree->ptrFirstPoint;
@@ -188,18 +233,18 @@ void findNearestPointRecursiveley_Elke(Node* tree, double* currDist, unsigned in
 	// givenPoint is actually on the left side of the tree
 	if (distToMedian <= 0)
 	{
-		findNearestPointRecursiveley(tree->leftChild, currDist, depth + 1, currentPoint);
+		findNearestPointRecursiveley_Elke(tree->leftChild, currDist, depth + 1, currentPoint);
 		if (*currDist > abs(distToMedian))
 		{
-			findNearestPointRecursiveley(tree->rightChild, currDist, depth + 1, currentPoint);
+			findNearestPointRecursiveley_Elke(tree->rightChild, currDist, depth + 1, currentPoint);
 		}
 	}
 	else 
 	{
-		findNearestPointRecursiveley(tree->rightChild, currDist, depth + 1, currentPoint);
+		findNearestPointRecursiveley_Elke(tree->rightChild, currDist, depth + 1, currentPoint);
 		if (*currDist > abs(distToMedian))
 		{
-			findNearestPointRecursiveley(tree->leftChild, currDist, depth + 1, currentPoint);
+			findNearestPointRecursiveley_Elke(tree->leftChild, currDist, depth + 1, currentPoint);
 		}		
 	}	
 }
@@ -219,12 +264,12 @@ void insertGivenPoint(Node* tree, double* currDist, unsigned int depth, Point3d*
 		if (tree->median <= givenPointDimension)
 		{
 			depth++;
-			GivenPoint(tree->leftChild, currDist, depth, currentPoint);
+			insertGivenPoint(tree->leftChild, currDist, depth, currentPoint);
 		}
 		else
 		{
 			depth++;
-			GivenPoint(tree->rightChild, currDist, depth, currentPoint);
+			insertGivenPoint(tree->rightChild, currDist, depth, currentPoint);
 		}
 	}
 }
@@ -250,52 +295,5 @@ double getDimension(Point3d point, unsigned int depth)
 	return currentPosition;
 }
 
-    nearestNeighbor_daniel_impl(tree, query, &minDist, &minPoint, 0);
-    return minPoint;
-}
+    
 
-void nearestNeighbor_daniel_impl(Node* tree, const double* queryPoint, double* minDist,
-                                       Point3d* minPoint, unsigned int depth)
-{
-    if (!tree)
-        return;
-
-    if (!tree->leftChild && !tree->rightChild)
-    {
-        auto* start = tree->ptrFirstPoint;
-
-        while (start != tree->ptrLastPoint)
-        {
-            Point3d pt = *start;
-            double dist = std::sqrt(sqr(pt.x - queryPoint[0])
-                                    + sqr(pt.y - queryPoint[1])
-                                    + sqr(pt.z - queryPoint[2]));
-            if (dist < *minDist)
-            {
-                *minDist = dist;
-                *minPoint = pt;
-            }
-
-            ++start;
-        }
-    }
-    else
-    {
-        unsigned int dim = depth % 3;
-
-        if (queryPoint[dim] <= tree->median)
-        {
-            nearestNeighbor_daniel_impl(tree->leftChild, queryPoint, minDist, minPoint, depth + 1);
-
-            if ((queryPoint[dim] + *minDist) > tree->median)
-                nearestNeighbor_daniel_impl(tree->rightChild, queryPoint, minDist, minPoint, depth + 1);
-        }
-        else
-        {
-            nearestNeighbor_daniel_impl(tree->rightChild, queryPoint, minDist, minPoint, depth + 1);
-
-            if ((queryPoint[dim] - *minDist) <= tree->median)
-                nearestNeighbor_daniel_impl(tree->leftChild, queryPoint, minDist, minPoint, depth + 1);
-        }
-    }
-}
