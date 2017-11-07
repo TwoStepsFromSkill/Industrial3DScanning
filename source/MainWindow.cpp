@@ -293,7 +293,7 @@ void MainWindow::computeAndVisualizeNearestNeighbor()
     m_nearestWidget->getQueryPoint(xyz);
 
     auto startTime = std::chrono::system_clock::now();
-    Point3d res = nearestNeighbor_daniel(m_kdTree, Point3d(xyz[0], xyz[1], xyz[2]));
+	Point3d res = findNearestPoint_Elke(m_kdTree, Point3d(xyz[0], xyz[1], xyz[2]));//nearestNeighbor_daniel(m_kdTree, Point3d(xyz[0], xyz[1], xyz[2]));
     duration_micro elapsed = std::chrono::system_clock::now() - startTime;
     std::cout << "Found NearestNeighbor! Took [" << elapsed.count() << "µs]\n";
 

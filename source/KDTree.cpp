@@ -197,16 +197,21 @@ void nearestNeighbor_daniel_impl(Node* tree, const double* queryPoint, double* m
 		}
 	}
 }
-Point3d findNearestPoint_Elke(Node* tree)
+Point3d findNearestPoint_Elke(Node* tree, const Point3d& queryPoint)
 {	
-	Point3d currentPoint = *tree->ptrFirstPoint;
-	double currDist = distance3d(currentPoint, *givenPoint);
-	//givenPoint = new Point3d(0.9, 0.9, 0.9);
+	double minDist = std::numeric_limits<double>::max();
+	Point3d minPoint(std::numeric_limits<double>::lowest(),
+		std::numeric_limits<double>::lowest(),
+		std::numeric_limits<double>::lowest());
 	
-	insertGivenPoint(tree, &currDist, 0, &currentPoint);
-	findNearestPointRecursiveley_Elke(tree, &currDist,0,&currentPoint);
+	givenPoint->x = queryPoint.x;
+	givenPoint->y = queryPoint.y;
+	givenPoint->z = queryPoint.z;
+	
+	insertGivenPoint(tree, &minDist, 0, &minPoint);
+	findNearestPointRecursiveley_Elke(tree, &minDist,0,&minPoint);
 
-	return currentPoint;
+	return minPoint;
 }
 
 void findNearestPointRecursiveley_Elke(Node* tree, double* currDist, unsigned int depth, Point3d* currentPoint)

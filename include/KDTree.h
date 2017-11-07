@@ -34,7 +34,7 @@ Point3d nearestNeighbor_daniel(Node* tree, const Point3d& queryPoint);
 void nearestNeighbor_daniel_impl(Node* tree, const double* queryPoint, double* minDist,
                                        Point3d* minPoint, unsigned int depth);
 
-Point3d findNearestPoint_Elke(Node* tree);
+Point3d findNearestPoint_Elke(Node* tree, const Point3d& queryPoint);
 void findNearestPointRecursiveley_Elke(Node* tree, double* currDist, unsigned int depth, Point3d* currentPoint);
 void insertGivenPoint(Node* tree, double* currDist, unsigned int depth, Point3d* currentPoint);
 double getDimension(Point3d point, unsigned int depth);
