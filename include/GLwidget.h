@@ -33,13 +33,22 @@ public:
     //return camera
     GLcamera& camera(){return m_camera;}
 
-    void setPointsInRange(const std::vector<Point3d>& points);
-
 public slots:
+    // Visualization
+    void reloadDrawSettings();
+
+    // Range query
     void drawingRangeQueryBoxChange(bool value);
     void drawingRangeQueryResultEnabled(bool value);
     void rangeQueryCenterChanged(double x, double y, double z);
     void rangeQueryExtendChanged(double dx, double dy, double dz);
+    void rangeQueryResultChanged(std::vector<Point3d> points);
+
+    // Nearest neighbor
+    void drawingNearestNeighborQueryPointChanged(bool value);
+    void drawingNearestNeighborResultPointChanged(bool value);
+    void nearestNeighborQueryPointChanged(const Point3d& queryPoint);
+    void nearestNeighborResultPointChanged(const Point3d& resultPoint);
 
 private:
     void loadDrawSettings();
@@ -83,45 +92,44 @@ private:
     double m_btl[3];
     double m_btr[3];
 
-    // Nearest Neighboor
+    // Nearest Neighbor
     Point3d m_nearestQueryPoint;
-    Point3d m_nearestPoint;
+    Point3d m_nearestResultPoint;
     bool m_drawNearestQueryPoint;
-    bool m_drawNearestQueryResult;
+    bool m_drawNearestResultPoint;
 
     // Colors and draw settings
-    unsigned char m_PC_color[3];
+    unsigned char m_PC_color[4];
     int m_PC_size;
 
-    unsigned char m_RQ_box_color[3];
+    unsigned char m_RQ_box_color[4];
     double m_RQ_box_width;
 
-    unsigned char m_RQ_result_color[3];
+    unsigned char m_RQ_result_color[4];
     int m_RQ_result_size;
 
-    unsigned char m_NN_query_color[3];
+    unsigned char m_NN_query_color[4];
     int m_NN_query_size;
 
-    unsigned char m_NN_result_color[3];
+    unsigned char m_NN_result_color[4];
     int m_NN_result_size;
 
-    unsigned char m_XAXIS_color[3];
-    unsigned char m_YAXIS_color[3];
-    unsigned char m_ZAXIS_color[3];
+    unsigned char m_XAXIS_color[4];
+    unsigned char m_YAXIS_color[4];
+    unsigned char m_ZAXIS_color[4];
     double m_AXIS_width;
 
-    unsigned char m_CENTERSPHERE_color[3];
+    unsigned char m_CENTERSPHERE_color[4];
 
-    unsigned char m_XCIRCLE_color[3];
-    unsigned char m_YCIRCLE_color[3];
-    unsigned char m_ZCIRCLE_color[3];
-    double m_CIRCLE_width;
+    unsigned char m_XCIRCLE_color[4];
+    unsigned char m_YCIRCLE_color[4];
+    unsigned char m_ZCIRCLE_color[4];
 
-    unsigned char m_BB_color[3];
+    unsigned char m_BB_color[4];
     double m_BB_width;
 
-    unsigned char m_BG_top_color[3];
-    unsigned char m_BG_bottom_color[3];
+    unsigned char m_BG_top_color[4];
+    unsigned char m_BG_bottom_color[4];
 };
 
 #endif

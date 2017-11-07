@@ -7,5 +7,5 @@ set(HEADER
     ${CMAKE_CURRENT_SOURCE_DIR}/KDTree.h
     ${CMAKE_CURRENT_SOURCE_DIR}/BaseTabWidget.h
     ${CMAKE_CURRENT_SOURCE_DIR}/RangeQueryWidget.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/NearestNeighboorWidget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/NearestNeighborWidget.h
     PARENT_SCOPE)

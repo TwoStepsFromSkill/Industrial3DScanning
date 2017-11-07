@@ -1,4 +1,4 @@
-#include "NearestNeighboorWidget.h"
+#include "NearestNeighborWidget.h"
 
 #include <QLabel>
 #include <QDoubleSpinBox>
@@ -14,24 +14,24 @@
 
 #include <iostream>
 
-NearestNeighboorWidget::NearestNeighboorWidget(QWidget* parent)
+NearestNeighborWidget::NearestNeighborWidget(QWidget* parent)
     : BaseTabWidget(parent)
 {
-    m_dummyLayout = new QVBoxLayout(this);
+    m_dummyLayout = new QVBoxLayout();
     m_dummyLayout->setContentsMargins(0, 0, 0, 0);
     m_mainWidget = new QGroupBox(this);
     m_mainWidget->setCheckable(true);
     m_mainWidget->setTitle(QString("Nearest Neighboor"));
     m_dummyLayout->addWidget(m_mainWidget);
 
-    m_mainLayout = new QVBoxLayout(this);
+    m_mainLayout = new QVBoxLayout();
     m_mainWidget->setLayout(m_mainLayout);
 
     QLabel* positionSectionHeader = new QLabel(QString("Position of query point:"), this);
     positionSectionHeader->setStyleSheet("font-weight: bold");
     m_mainLayout->addWidget(positionSectionHeader);
 
-    QGridLayout* positionLayout = new QGridLayout(this);
+    QGridLayout* positionLayout = new QGridLayout();
 
     QLabel* xLabel = new QLabel(QString("X"), this);
     xLabel->setStyleSheet("QLabel { color : red; font-weight: bold }");
@@ -78,7 +78,7 @@ NearestNeighboorWidget::NearestNeighboorWidget(QWidget* parent)
     m_liveUpdate = new QCheckBox(QString("Live Update"), this);
     m_mainLayout->addWidget(m_liveUpdate);
 
-    QHBoxLayout* buttonLayout = new QHBoxLayout(this);
+    QHBoxLayout* buttonLayout = new QHBoxLayout();
 
     m_buttonApply = new QPushButton(QString("Apply"), this);
     m_buttonHide = new QPushButton(QString("Hide"), this);
@@ -91,7 +91,7 @@ NearestNeighboorWidget::NearestNeighboorWidget(QWidget* parent)
 
     setLayout(m_dummyLayout);
 
-    connect(m_mainWidget, SIGNAL(clicked(bool)), this, SIGNAL(clickedEnable(bool)));
+    connect(m_mainWidget, SIGNAL(toggled(bool)), this, SIGNAL(widgetEnabled(bool)));
 
     connect(m_xValue, SIGNAL(valueChanged(int)), this, SLOT(positionChanged(int)));
     connect(m_yValue, SIGNAL(valueChanged(int)), this, SLOT(positionChanged(int)));
@@ -101,21 +101,21 @@ NearestNeighboorWidget::NearestNeighboorWidget(QWidget* parent)
 
     connect(m_buttonApply, SIGNAL(pressed()), this, SIGNAL(applyPressed()));
     connect(m_buttonHide, SIGNAL(pressed()), this, SLOT(hidePress()));
+
+    deactivate();
 }
 
-void NearestNeighboorWidget::deactivate()
+void NearestNeighborWidget::deactivate()
 {
-    std::cerr << "Called deactivate in NearestNeighboorWidget\n";
     m_mainWidget->setChecked(false);
 }
 
-void NearestNeighboorWidget::activate()
+void NearestNeighborWidget::activate()
 {
-    std::cerr << "Called activate in NearestNeighboorWidget\n";
     m_mainWidget->setChecked(true);
 }
 
-void NearestNeighboorWidget::resetValueRange(double xMin, double xMax, double yMin, double yMax, double zMin, double zMax)
+void NearestNeighborWidget::resetValueRange(double xMin, double xMax, double yMin, double yMax, double zMin, double zMax)
 {
     m_xValueRange[0] = xMin;
     m_xValueRange[1] = xMax;
@@ -138,16 +138,23 @@ void NearestNeighboorWidget::resetValueRange(double xMin, double xMax, double yM
     blockSliders(false);
 
     emit hidePressed();
-    emit centerChanged(getXValue(), getYValue(), getZValue());
+    emit positionChange(getXValue(), getYValue(), getZValue());
 }
 
-void NearestNeighboorWidget::positionChanged(int)
+void NearestNeighborWidget::getQueryPoint(double* data)
+{
+    data[0] = getXValue();
+    data[1] = getYValue();
+    data[2] = getZValue();
+}
+
+void NearestNeighborWidget::positionChanged(int)
 {
     updatePositionLabel();
-    emit centerChanged(getXValue(), getYValue(), getZValue());
+    emit positionChange(getXValue(), getYValue(), getZValue());
 }
 
-void NearestNeighboorWidget::liveUpdateStateChanged(int state)
+void NearestNeighborWidget::liveUpdateStateChanged(int state)
 {
     if (state == Qt::Unchecked)
     {
@@ -159,42 +166,42 @@ void NearestNeighboorWidget::liveUpdateStateChanged(int state)
     }
 }
 
-void NearestNeighboorWidget::hidePress()
+void NearestNeighborWidget::hidePress()
 {
     m_liveUpdate->setChecked(false);
     emit hidePressed();
 }
 
-double NearestNeighboorWidget::getXValue() const
+double NearestNeighborWidget::getXValue() const
 {
     return getValue(m_xValue->value(), m_xValueRange);
 }
 
-double NearestNeighboorWidget::getYValue() const
+double NearestNeighborWidget::getYValue() const
 {
     return getValue(m_yValue->value(), m_yValueRange);
 }
 
-double NearestNeighboorWidget::getZValue() const
+double NearestNeighborWidget::getZValue() const
 {
     return getValue(m_zValue->value(), m_zValueRange);
 }
 
-double NearestNeighboorWidget::getValue(int position, const double range[2]) const
+double NearestNeighborWidget::getValue(int position, const double range[2]) const
 {
     double factor = (static_cast<double>(position) - m_DEFAULT_SLIDER_MIN)
                     / (m_DEFAULT_SLIDER_MAX - m_DEFAULT_SLIDER_MIN);
     return (1.0 - factor)*range[0] + factor*range[1];
 }
 
-void NearestNeighboorWidget::blockSliders(bool value)
+void NearestNeighborWidget::blockSliders(bool value)
 {
     m_xValue->blockSignals(value);
     m_yValue->blockSignals(value);
     m_zValue->blockSignals(value);
 }
 
-void NearestNeighboorWidget::updatePositionLabel()
+void NearestNeighborWidget::updatePositionLabel()
 {
     m_positionLabel->setText(QString("X: %1 \nY: %2 \nZ: %3").arg(QString::number(getXValue()),
                                                                   QString::number(getYValue()),

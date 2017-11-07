@@ -1,5 +1,5 @@
-#ifndef NEAREST_NEIGHBOOR_WIDGET_H
-#define NEAREST_NEIGHBOOR_WIDGET_H
+#ifndef NEAREST_NEIGHBOR_WIDGET_H
+#define NEAREST_NEIGHBOR_WIDGET_H
 
 #include "BaseTabWidget.h"
 
@@ -10,24 +10,26 @@ class QSlider;
 class QGroupBox;
 class QCheckBox;
 
-class NearestNeighboorWidget : public BaseTabWidget
+class NearestNeighborWidget : public BaseTabWidget
 {
     Q_OBJECT
 public:
-    NearestNeighboorWidget(QWidget* parent = nullptr);
-    virtual ~NearestNeighboorWidget() {}
+    NearestNeighborWidget(QWidget* parent = nullptr);
+    virtual ~NearestNeighborWidget() {}
 
     void resetValueRange(double xMin, double xMax,
                        double yMin, double yMax,
                        double zMin, double zMax);
 
+    void getQueryPoint(double* data);
+
     virtual void deactivate() override;
     virtual void activate() override;
 
 signals:
-    void clickedEnable(bool value);
+    void widgetEnabled(bool value);
 
-    void centerChanged(double x, double y, double z);
+    void positionChange(double x, double y, double z);
 
     void liveUpdateChanged(bool value);
 
@@ -75,4 +77,4 @@ private slots:
     void hidePress();
 };
 
-#endif // NEAREST_NEIGHBOOR_WIDGET_H
+#endif // NEAREST_NEIGHBOR_WIDGET_H

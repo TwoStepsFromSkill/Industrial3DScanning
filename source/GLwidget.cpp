@@ -21,6 +21,8 @@ GLwidget::GLwidget(QWidget* parent)
     , m_rangeExtend()
     , m_drawRangeQueryBox(false)
     , m_drawRangeQueryResult(false)
+    , m_drawNearestQueryPoint(false)
+    , m_drawNearestResultPoint(false)
 {
     loadDrawSettings();
 }
@@ -29,6 +31,11 @@ void GLwidget::initializeGL()
 {
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
+
+    glEnable(GL_DEPTH_TEST);
+
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_BLEND);
 }
 
 void GLwidget::resizeGL(int w, int h)
@@ -54,19 +61,19 @@ void GLwidget::paintGL()
         glEnableClientState(GL_VERTEX_ARRAY);
 
         glPointSize(m_PC_size);
-        glColor3ubv(m_PC_color);
+        glColor4ubv(m_PC_color);
         glVertexPointer(3, GL_DOUBLE, sizeof(Point3d), &m_points[0]);
         glDrawArrays(GL_POINTS, 0, (unsigned int)m_points.size());
 
         glDisableClientState(GL_VERTEX_ARRAY);
     }
 
-
+    // Draw range query box
     if (m_drawRangeQueryBox)
     {
         // Draw range box
         glPushAttrib(GL_POLYGON_BIT);
-        glColor3ubv(m_RQ_box_color);
+        glColor4ubv(m_RQ_box_color);
         glLineWidth(m_RQ_box_width);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
@@ -94,13 +101,14 @@ void GLwidget::paintGL()
         glPopAttrib();
     }
 
+    // Draw range query result
     if (m_drawRangeQueryResult && !m_pointsInRange.empty())
     {
         // Draw points
         glEnableClientState(GL_VERTEX_ARRAY);
 
         glPointSize(m_RQ_result_size);
-        glColor3ubv(m_RQ_result_color);
+        glColor4ubv(m_RQ_result_color);
         glVertexPointer(3, GL_DOUBLE, sizeof(Point3d), &m_pointsInRange[0]);
         glDrawArrays(GL_POINTS, 0, (unsigned int)m_pointsInRange.size());
 
@@ -108,7 +116,25 @@ void GLwidget::paintGL()
         glDisableClientState(GL_VERTEX_ARRAY);
     }
 
-    glEnable(GL_DEPTH_TEST);
+    if (m_drawNearestQueryPoint)
+    {
+        glPointSize(m_NN_query_size);
+        glColor4ubv(m_NN_query_color);
+
+        glBegin(GL_POINTS);
+            glVertex3d(m_nearestQueryPoint.x, m_nearestQueryPoint.y, m_nearestQueryPoint.z);
+        glEnd();
+    }
+
+    if (m_drawNearestResultPoint)
+    {
+        glPointSize(m_NN_result_size);
+        glColor4ubv(m_NN_result_color);
+
+        glBegin(GL_POINTS);
+            glVertex3d(m_nearestResultPoint.x, m_nearestResultPoint.y, m_nearestResultPoint.z);
+        glEnd();
+    }
 
     //draw coordinate frame
     drawCoordinateAxes();
@@ -116,18 +142,20 @@ void GLwidget::paintGL()
     update();
 }
 
-void  GLwidget::setPointsInRange(const std::vector<Point3d>& points)
+void GLwidget::reloadDrawSettings()
 {
-    m_pointsInRange = points;
-    this->repaint();
+    loadDrawSettings();
+    this->update();
 }
 
 void GLwidget::drawingRangeQueryBoxChange(bool value)
 {
     m_drawRangeQueryBox = value;
-    m_drawRangeQueryResult = value;
 
-    this->repaint();
+    if (!value)
+        m_drawRangeQueryResult = value;
+
+    this->update();
 }
 
 void GLwidget::drawingRangeQueryResultEnabled(bool value)
@@ -137,7 +165,7 @@ void GLwidget::drawingRangeQueryResultEnabled(bool value)
     if (!value)
         m_pointsInRange.clear();
 
-    this->repaint();
+    this->update();
 }
 
 void GLwidget::rangeQueryCenterChanged(double x, double y, double z)
@@ -147,7 +175,7 @@ void GLwidget::rangeQueryCenterChanged(double x, double y, double z)
     m_rangeCenter.z = z;
 
     updateRangeQueryBoxData();
-    this->repaint();
+    this->update();
 }
 
 void GLwidget::rangeQueryExtendChanged(double dx, double dy, double dz)
@@ -157,7 +185,41 @@ void GLwidget::rangeQueryExtendChanged(double dx, double dy, double dz)
     m_rangeExtend.z = dz;
 
     updateRangeQueryBoxData();
-    this->repaint();
+    this->update();
+}
+
+void GLwidget::rangeQueryResultChanged(std::vector<Point3d> points)
+{
+    m_pointsInRange = std::move(points);
+    this->update();
+}
+
+void GLwidget::drawingNearestNeighborQueryPointChanged(bool value)
+{
+    m_drawNearestQueryPoint = value;
+
+    if (!value)
+        m_drawNearestResultPoint = value;
+
+    this->update();
+}
+
+void GLwidget::drawingNearestNeighborResultPointChanged(bool value)
+{
+    m_drawNearestResultPoint = value;
+    this->update();
+}
+
+void GLwidget::nearestNeighborQueryPointChanged(const Point3d& queryPoint)
+{
+    m_nearestQueryPoint = queryPoint;
+    this->update();
+}
+
+void GLwidget::nearestNeighborResultPointChanged(const Point3d& resultPoint)
+{
+    m_nearestResultPoint = resultPoint;
+    this->update();
 }
 
 void GLwidget::loadDrawSettings()
@@ -165,77 +227,92 @@ void GLwidget::loadDrawSettings()
     QFileInfo check_file(QString("drawSettings.ini"));
 
     if (!(check_file.exists() && check_file.isFile()))
-        std::cerr << "Could not find drawSettings.ini file in executable directory. Use default values!\n";
+        std::cerr << "Could not find drawSettings.ini file in executable directory."
+                     "Use default values!\n";
 
     QSettings set(QString("drawSettings.ini"), QSettings::IniFormat);
 
     m_PC_color[0] = set.value("PC_color_R", 255).value<unsigned char>();
     m_PC_color[1] = set.value("PC_color_G", 141).value<unsigned char>();
     m_PC_color[2] = set.value("PC_color_B", 42).value<unsigned char>();
+    m_PC_color[3] = set.value("PC_color_A", 255).value<unsigned char>();
     m_PC_size = set.value("PC_size", 2).toInt();
 
     m_RQ_box_color[0] = set.value("RQ_box_color_R", 188).value<unsigned char>();
     m_RQ_box_color[1] = set.value("RQ_box_color_G", 217).value<unsigned char>();
     m_RQ_box_color[2] = set.value("RQ_box_color_B", 5).value<unsigned char>();
+    m_RQ_box_color[3] = set.value("RQ_box_color_A", 255).value<unsigned char>();
     m_RQ_box_width = set.value("RQ_box_width", 1.0).toDouble();
 
     m_RQ_result_color[0] = set.value("RQ_result_color_R", 217).value<unsigned char>();
     m_RQ_result_color[1] = set.value("RQ_result_color_G", 22).value<unsigned char>();
     m_RQ_result_color[2] = set.value("RQ_result_color_B", 25).value<unsigned char>();
+    m_RQ_result_color[3] = set.value("RQ_result_color_A", 255).value<unsigned char>();
     m_RQ_result_size = set.value("RQ_result_size", 2).toInt();
 
     m_NN_query_color[0] = set.value("NN_query_color_R", 255).value<unsigned char>();
     m_NN_query_color[1] = set.value("NN_query_color_G", 0).value<unsigned char>();
     m_NN_query_color[2] = set.value("NN_query_color_B", 255).value<unsigned char>();
-    m_NN_query_size = set.value("NN_query_size", 5).toInt();
+    m_NN_query_color[3] = set.value("NN_query_color_A", 255).value<unsigned char>();
+    m_NN_query_size = set.value("NN_query_size", 15).toInt();
 
     m_NN_result_color[0] = set.value("NN_result_color_R", 0).value<unsigned char>();
     m_NN_result_color[1] = set.value("NN_result_color_G", 0).value<unsigned char>();
     m_NN_result_color[2] = set.value("NN_result_color_B", 255).value<unsigned char>();
-    m_NN_result_size = set.value("NN_result_size", 5).toInt();
+    m_NN_result_color[3] = set.value("NN_result_color_A", 255).value<unsigned char>();
+    m_NN_result_size = set.value("NN_result_size", 15).toInt();
 
     m_XAXIS_color[0] = set.value("XAXIS_color_R", 255).value<unsigned char>();
     m_XAXIS_color[1] = set.value("XAXIS_color_G", 0).value<unsigned char>();
     m_XAXIS_color[2] = set.value("XAXIS_color_B", 0).value<unsigned char>();
+    m_XAXIS_color[3] = set.value("XAXIS_color_A", 255).value<unsigned char>();
 
     m_YAXIS_color[0] = set.value("YAXIS_color_R", 0).value<unsigned char>();
     m_YAXIS_color[1] = set.value("YAXIS_color_G", 255).value<unsigned char>();
     m_YAXIS_color[2] = set.value("YAXIS_color_B", 0).value<unsigned char>();
+    m_YAXIS_color[3] = set.value("YAXIS_color_A", 255).value<unsigned char>();
 
     m_ZAXIS_color[0] = set.value("ZAXIS_color_R", 0).value<unsigned char>();
     m_ZAXIS_color[1] = set.value("ZAXIS_color_G", 0).value<unsigned char>();
     m_ZAXIS_color[2] = set.value("ZAXIS_color_B", 255).value<unsigned char>();
+    m_ZAXIS_color[3] = set.value("ZAXIS_color_A", 255).value<unsigned char>();
     m_AXIS_width = set.value("AXIS_width", 1.0).toDouble();
 
     m_CENTERSPHERE_color[0] = set.value("CENTERSPHERE_color_R", 255).value<unsigned char>();
     m_CENTERSPHERE_color[1] = set.value("CENTERSPHERE_color_G", 255).value<unsigned char>();
     m_CENTERSPHERE_color[2] = set.value("CENTERSPHERE_color_B", 0).value<unsigned char>();
+    m_CENTERSPHERE_color[3] = set.value("CENTERSPHERE_color_A", 255).value<unsigned char>();
 
     m_XCIRCLE_color[0] = set.value("XCIRCLE_color_R", 255).value<unsigned char>();
     m_XCIRCLE_color[1] = set.value("XCIRCLE_color_G", 0).value<unsigned char>();
     m_XCIRCLE_color[2] = set.value("XCIRCLE_color_B", 0).value<unsigned char>();
+    m_XCIRCLE_color[3] = set.value("XCIRCLE_color_A", 255).value<unsigned char>();
 
     m_YCIRCLE_color[0] = set.value("YCIRCLE_color_R", 0).value<unsigned char>();
     m_YCIRCLE_color[1] = set.value("YCIRCLE_color_G", 255).value<unsigned char>();
     m_YCIRCLE_color[2] = set.value("YCIRCLE_color_B", 0).value<unsigned char>();
+    m_YCIRCLE_color[3] = set.value("YCIRCLE_color_A", 255).value<unsigned char>();
 
     m_ZCIRCLE_color[0] = set.value("ZCIRCLE_color_R", 0).value<unsigned char>();
     m_ZCIRCLE_color[1] = set.value("ZCIRCLE_color_G", 0).value<unsigned char>();
     m_ZCIRCLE_color[2] = set.value("ZCIRCLE_color_B", 255).value<unsigned char>();
-    m_CIRCLE_width = set.value("CIRCLE_width", 1.0).toDouble();
+    m_ZCIRCLE_color[3] = set.value("ZCIRCLE_color_A", 255).value<unsigned char>();
 
     m_BB_color[0] = set.value("BB_color_R", 255).value<unsigned char>();
     m_BB_color[1] = set.value("BB_color_G", 255).value<unsigned char>();
     m_BB_color[2] = set.value("BB_color_B", 255).value<unsigned char>();
+    m_BB_color[3] = set.value("BB_color_A", 255).value<unsigned char>();
     m_BB_width = set.value("BB_width", 1.0).toDouble();
 
     m_BG_top_color[0] = set.value("BG_top_color_R", 38).value<unsigned char>();
     m_BG_top_color[1] = set.value("BG_top_color_G", 38).value<unsigned char>();
     m_BG_top_color[2] = set.value("BG_top_color_B", 38).value<unsigned char>();
+    m_BG_top_color[3] = set.value("BG_top_color_A", 255).value<unsigned char>();
 
     m_BG_bottom_color[0] = set.value("BG_bottom_color_R", 100).value<unsigned char>();
     m_BG_bottom_color[1] = set.value("BG_bottom_color_G", 100).value<unsigned char>();
     m_BG_bottom_color[2] = set.value("BG_bottom_color_B", 100).value<unsigned char>();
+    m_BG_bottom_color[3] = set.value("BG_bottom_color_A", 255).value<unsigned char>();
 }
 
 void GLwidget::mousePressEvent(QMouseEvent * e)
@@ -340,7 +417,6 @@ void GLwidget::drawCircle()
     const int segments = 180;
 
     glBegin(GL_LINE_LOOP);
-    glLineWidth(m_CIRCLE_width);
     for (int i = 0; i < segments; ++i)
     {
         const double theta = 2.0 * 3.1415926 * double(i) / double(segments);
@@ -356,22 +432,22 @@ void GLwidget::drawCoordinateAxes()
     glBegin(GL_LINES);
     glLineWidth(m_AXIS_width);
     //draw line for X-Axis
-    glColor3ubv(m_XAXIS_color);
+    glColor4ubv(m_XAXIS_color);
     glVertex3d(m_sceneCenter.x, m_sceneCenter.y, m_sceneCenter.z);
     glVertex3d(m_sceneCenter.x + m_sceneRadius, m_sceneCenter.y, m_sceneCenter.z);
     //draw line for Y-Axis
-    glColor3ubv(m_YAXIS_color);
+    glColor4ubv(m_YAXIS_color);
     glVertex3d(m_sceneCenter.x, m_sceneCenter.y, m_sceneCenter.z);
     glVertex3d(m_sceneCenter.x, m_sceneCenter.y + m_sceneRadius, m_sceneCenter.z);
     //draw line for Z-Axis
-    glColor3ubv(m_ZAXIS_color);
+    glColor4ubv(m_ZAXIS_color);
     glVertex3d(m_sceneCenter.x, m_sceneCenter.y, m_sceneCenter.z);
     glVertex3d(m_sceneCenter.x, m_sceneCenter.y, m_sceneCenter.z + m_sceneRadius);
     glEnd();
 
     //draw center point as a sphere
     glPushMatrix();
-    glColor3ubv(m_CENTERSPHERE_color);
+    glColor4ubv(m_CENTERSPHERE_color);
     glTranslated(m_sceneCenter.x, m_sceneCenter.y, m_sceneCenter.z);
     GLUquadric* quad = gluNewQuadric();
     gluSphere(quad, m_sceneRadius / 20, 30, 30);
@@ -379,23 +455,23 @@ void GLwidget::drawCoordinateAxes()
     glPopMatrix();
 
     glPushMatrix();
-    glColor3ubv(m_ZCIRCLE_color);
+    glColor4ubv(m_ZCIRCLE_color);
     glTranslated(m_sceneCenter.x, m_sceneCenter.y, m_sceneCenter.z);
     glScaled(m_sceneRadius, m_sceneRadius, m_sceneRadius);
     drawCircle();
     //draw another circle 90 degree rotated
     glRotated(90, 1, 0, 0);
-    glColor3ubv(m_YCIRCLE_color);
+    glColor4ubv(m_YCIRCLE_color);
     drawCircle();
     glRotated(90, 0, 1, 0);
-    glColor3ubv(m_XCIRCLE_color);
+    glColor4ubv(m_XCIRCLE_color);
     drawCircle();
     glPopMatrix();
 
     //draw bounding box
     glPushMatrix();
     glPushAttrib(GL_POLYGON_BIT);
-    glColor3ubv(m_BB_color);
+    glColor4ubv(m_BB_color);
     Point3d S=m_bbmax-m_bbmin;
     glTranslated(m_bbmin.x, m_bbmin.y, m_bbmin.z);
     glScaled(S.x,S.y,S.z);
@@ -435,9 +511,9 @@ void GLwidget::drawBackground()
     glLoadIdentity();
 
     glBegin(GL_QUADS);
-    glColor3ubv(m_BG_bottom_color); //color bottom
+    glColor4ubv(m_BG_bottom_color); //color bottom
     glVertex2f(0.0f, 0.0f);  glVertex2f(winWidth, 0.0f);
-    glColor3ubv(m_BG_top_color);  //color top
+    glColor4ubv(m_BG_top_color);  //color top
     glVertex2f(winWidth, winHeight);  glVertex2f(0.0f, winHeight);
     glEnd();
 
