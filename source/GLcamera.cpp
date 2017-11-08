@@ -30,7 +30,7 @@ void GLcamera::initializeCamera(Point3d rotationCenter, double sceneRadius)
     m_zNear = D - 3 * m_sceneRadius;
     m_zFar  = D + 3 * m_sceneRadius;
 
-    glTranslated(-rotationCenter.x, -rotationCenter.y, -rotationCenter.z - D);
+    glTranslated(-rotationCenter[0], -rotationCenter[1], -rotationCenter[2] - D);
 }
 
 void GLcamera::setWindowSize(int winWidth, int winHeight)
@@ -131,17 +131,17 @@ void GLcamera::rotate(int x1, int y1, int x2, int y2)
     // We now multiply our current rotation axis (in camera space) with the global world transform Matrix
     // and get a new rotation axis which is now in the frame of the global transform
     Point3d axisWS;
-    axisWS.x = (M[0] * axisCS.x) + (M[1] * axisCS.y) + (M[2] * axisCS.z);
-    axisWS.y = (M[4] * axisCS.x) + (M[5] * axisCS.y) + (M[6] * axisCS.z);
-    axisWS.z = (M[8] * axisCS.x) + (M[9] * axisCS.y) + (M[10] * axisCS.z);
+    axisWS[0] = (M[0] * axisCS[0]) + (M[1] * axisCS[1]) + (M[2] * axisCS[2]);
+    axisWS[1] = (M[4] * axisCS[0]) + (M[5] * axisCS[1]) + (M[6] * axisCS[2]);
+    axisWS[2] = (M[8] * axisCS[0]) + (M[9] * axisCS[1]) + (M[10] * axisCS[2]);
 
     // Rotation always happens in the origin (rotation center)
     // Therefore we first "move" the frame origin to our own rotation center
-    glTranslated(m_rotationCenter.x, m_rotationCenter.y, m_rotationCenter.z);
+    glTranslated(m_rotationCenter[0], m_rotationCenter[1], m_rotationCenter[2]);
     // now we rotate the frame about our own origin/rotation center
-    glRotated(2*angle * 180.0 / 3.1415, axisWS.x, axisWS.y, axisWS.z);
+    glRotated(2*angle * 180.0 / 3.1415, axisWS[0], axisWS[1], axisWS[2]);
     // and finally we "move" the frame origin back
-    glTranslated(-m_rotationCenter.x, -m_rotationCenter.y, -m_rotationCenter.z);
+    glTranslated(-m_rotationCenter[0], -m_rotationCenter[1], -m_rotationCenter[2]);
 }
 
 void GLcamera::usePerspectiveProjection(bool enable)

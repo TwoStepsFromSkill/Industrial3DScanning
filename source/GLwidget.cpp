@@ -122,7 +122,7 @@ void GLwidget::paintGL()
         glColor4ubv(m_NN_query_color);
 
         glBegin(GL_POINTS);
-            glVertex3d(m_nearestQueryPoint.x, m_nearestQueryPoint.y, m_nearestQueryPoint.z);
+            glVertex3dv(&m_nearestQueryPoint[0]);
         glEnd();
     }
 
@@ -132,7 +132,7 @@ void GLwidget::paintGL()
         glColor4ubv(m_NN_result_color);
 
         glBegin(GL_POINTS);
-            glVertex3d(m_nearestResultPoint.x, m_nearestResultPoint.y, m_nearestResultPoint.z);
+            glVertex3dv(&m_nearestResultPoint[0]);
         glEnd();
     }
 
@@ -170,9 +170,9 @@ void GLwidget::drawingRangeQueryResultEnabled(bool value)
 
 void GLwidget::rangeQueryCenterChanged(double x, double y, double z)
 {
-    m_rangeCenter.x = x;
-    m_rangeCenter.y = y;
-    m_rangeCenter.z = z;
+    m_rangeCenter[0] = x;
+    m_rangeCenter[1] = y;
+    m_rangeCenter[2] = z;
 
     updateRangeQueryBoxData();
     this->update();
@@ -180,9 +180,9 @@ void GLwidget::rangeQueryCenterChanged(double x, double y, double z)
 
 void GLwidget::rangeQueryExtendChanged(double dx, double dy, double dz)
 {
-    m_rangeExtend.x = dx;
-    m_rangeExtend.y = dy;
-    m_rangeExtend.z = dz;
+    m_rangeExtend[0] = dx;
+    m_rangeExtend[1] = dy;
+    m_rangeExtend[2] = dz;
 
     updateRangeQueryBoxData();
     this->update();
@@ -367,19 +367,19 @@ void GLwidget::updateScene()
     for (unsigned int i = 0; i < m_points.size(); ++i)
     {
         const Point3d& pt = m_points[i];
-        if (pt.x < minPoint.x) minPoint.x = pt.x;
-        else if (pt.x > maxPoint.x) maxPoint.x = pt.x;
+        if (pt[0] < minPoint[0]) minPoint[0] = pt[0];
+        else if (pt[0] > maxPoint[0]) maxPoint[0] = pt[0];
 
-        if (pt.y < minPoint.y) minPoint.y = pt.y;
-        else if (pt.y > maxPoint.y) maxPoint.y = pt.y;
+        if (pt[1] < minPoint[1]) minPoint[1] = pt[1];
+        else if (pt[1] > maxPoint[1]) maxPoint[1] = pt[1];
 
-        if (pt.z < minPoint.z) minPoint.z = pt.z;
-        else if (pt.z > maxPoint.z) maxPoint.z = pt.z;
+        if (pt[2] < minPoint[2]) minPoint[2] = pt[2];
+        else if (pt[2] > maxPoint[2]) maxPoint[2] = pt[2];
     }
 
-    m_sceneCenter.x = (maxPoint.x + minPoint.x) / 2;
-    m_sceneCenter.y = (maxPoint.y + minPoint.y) / 2;
-    m_sceneCenter.z = (maxPoint.z + minPoint.z) / 2;
+    m_sceneCenter[0] = (maxPoint[0] + minPoint[0]) / 2;
+    m_sceneCenter[1] = (maxPoint[1] + minPoint[1]) / 2;
+    m_sceneCenter[2] = (maxPoint[2] + minPoint[2]) / 2;
 
     m_sceneRadius = distance3d(m_sceneCenter, maxPoint);
 
@@ -433,22 +433,22 @@ void GLwidget::drawCoordinateAxes()
     glLineWidth(m_AXIS_width);
     //draw line for X-Axis
     glColor4ubv(m_XAXIS_color);
-    glVertex3d(m_sceneCenter.x, m_sceneCenter.y, m_sceneCenter.z);
-    glVertex3d(m_sceneCenter.x + m_sceneRadius, m_sceneCenter.y, m_sceneCenter.z);
+    glVertex3dv(&m_sceneCenter[0]);
+    glVertex3d(m_sceneCenter[0] + m_sceneRadius, m_sceneCenter[1], m_sceneCenter[2]);
     //draw line for Y-Axis
     glColor4ubv(m_YAXIS_color);
-    glVertex3d(m_sceneCenter.x, m_sceneCenter.y, m_sceneCenter.z);
-    glVertex3d(m_sceneCenter.x, m_sceneCenter.y + m_sceneRadius, m_sceneCenter.z);
+    glVertex3dv(&m_sceneCenter[0]);
+    glVertex3d(m_sceneCenter[0], m_sceneCenter[1] + m_sceneRadius, m_sceneCenter[2]);
     //draw line for Z-Axis
     glColor4ubv(m_ZAXIS_color);
-    glVertex3d(m_sceneCenter.x, m_sceneCenter.y, m_sceneCenter.z);
-    glVertex3d(m_sceneCenter.x, m_sceneCenter.y, m_sceneCenter.z + m_sceneRadius);
+    glVertex3dv(&m_sceneCenter[0]);
+    glVertex3d(m_sceneCenter[0], m_sceneCenter[1], m_sceneCenter[2] + m_sceneRadius);
     glEnd();
 
     //draw center point as a sphere
     glPushMatrix();
     glColor4ubv(m_CENTERSPHERE_color);
-    glTranslated(m_sceneCenter.x, m_sceneCenter.y, m_sceneCenter.z);
+    glTranslated(m_sceneCenter[0], m_sceneCenter[1], m_sceneCenter[2]);
     GLUquadric* quad = gluNewQuadric();
     gluSphere(quad, m_sceneRadius / 20, 30, 30);
     gluDeleteQuadric(quad);
@@ -456,7 +456,7 @@ void GLwidget::drawCoordinateAxes()
 
     glPushMatrix();
     glColor4ubv(m_ZCIRCLE_color);
-    glTranslated(m_sceneCenter.x, m_sceneCenter.y, m_sceneCenter.z);
+    glTranslated(m_sceneCenter[0], m_sceneCenter[1], m_sceneCenter[2]);
     glScaled(m_sceneRadius, m_sceneRadius, m_sceneRadius);
     drawCircle();
     //draw another circle 90 degree rotated
@@ -473,8 +473,8 @@ void GLwidget::drawCoordinateAxes()
     glPushAttrib(GL_POLYGON_BIT);
     glColor4ubv(m_BB_color);
     Point3d S=m_bbmax-m_bbmin;
-    glTranslated(m_bbmin.x, m_bbmin.y, m_bbmin.z);
-    glScaled(S.x,S.y,S.z);
+    glTranslated(m_bbmin[0], m_bbmin[1], m_bbmin[2]);
+    glScaled(S[0], S[1], S[2]);
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); //draw wire frame instead of filled quads
     glLineWidth(m_BB_width);
     drawBox();
@@ -530,37 +530,37 @@ void GLwidget::updateRangeQueryBoxData()
 {
     // Front
 
-    m_fbl[0] = m_rangeCenter.x - (m_rangeExtend.x / 2.0);
-    m_fbl[1] = m_rangeCenter.y - (m_rangeExtend.y / 2.0);
-    m_fbl[2] = m_rangeCenter.z - (m_rangeExtend.z / 2.0);
+    m_fbl[0] = m_rangeCenter[0] - (m_rangeExtend[0] / 2.0);
+    m_fbl[1] = m_rangeCenter[1] - (m_rangeExtend[1] / 2.0);
+    m_fbl[2] = m_rangeCenter[2] - (m_rangeExtend[2] / 2.0);
 
-    m_fbr[0] = m_rangeCenter.x + (m_rangeExtend.x / 2.0);
-    m_fbr[1] = m_rangeCenter.y - (m_rangeExtend.y / 2.0);
-    m_fbr[2] = m_rangeCenter.z - (m_rangeExtend.z / 2.0);
+    m_fbr[0] = m_rangeCenter[0] + (m_rangeExtend[0] / 2.0);
+    m_fbr[1] = m_rangeCenter[1] - (m_rangeExtend[1] / 2.0);
+    m_fbr[2] = m_rangeCenter[2] - (m_rangeExtend[2] / 2.0);
 
-    m_ftl[0] = m_rangeCenter.x - (m_rangeExtend.x / 2.0);
-    m_ftl[1] = m_rangeCenter.y - (m_rangeExtend.y / 2.0);
-    m_ftl[2] = m_rangeCenter.z + (m_rangeExtend.z / 2.0);
+    m_ftl[0] = m_rangeCenter[0] - (m_rangeExtend[0] / 2.0);
+    m_ftl[1] = m_rangeCenter[1] - (m_rangeExtend[1] / 2.0);
+    m_ftl[2] = m_rangeCenter[2] + (m_rangeExtend[2] / 2.0);
 
-    m_ftr[0] = m_rangeCenter.x + (m_rangeExtend.x / 2.0);
-    m_ftr[1] = m_rangeCenter.y - (m_rangeExtend.y / 2.0);
-    m_ftr[2] = m_rangeCenter.z + (m_rangeExtend.z / 2.0);
+    m_ftr[0] = m_rangeCenter[0] + (m_rangeExtend[0] / 2.0);
+    m_ftr[1] = m_rangeCenter[1] - (m_rangeExtend[1] / 2.0);
+    m_ftr[2] = m_rangeCenter[2] + (m_rangeExtend[2] / 2.0);
 
     // Back
 
-    m_bbl[0] = m_rangeCenter.x - (m_rangeExtend.x / 2.0);
-    m_bbl[1] = m_rangeCenter.y + (m_rangeExtend.y / 2.0);
-    m_bbl[2] = m_rangeCenter.z - (m_rangeExtend.z / 2.0);
+    m_bbl[0] = m_rangeCenter[0] - (m_rangeExtend[0] / 2.0);
+    m_bbl[1] = m_rangeCenter[1] + (m_rangeExtend[1] / 2.0);
+    m_bbl[2] = m_rangeCenter[2] - (m_rangeExtend[2] / 2.0);
 
-    m_bbr[0] = m_rangeCenter.x + (m_rangeExtend.x / 2.0);
-    m_bbr[1] = m_rangeCenter.y + (m_rangeExtend.y / 2.0);
-    m_bbr[2] = m_rangeCenter.z - (m_rangeExtend.z / 2.0);
+    m_bbr[0] = m_rangeCenter[0] + (m_rangeExtend[0] / 2.0);
+    m_bbr[1] = m_rangeCenter[1] + (m_rangeExtend[1] / 2.0);
+    m_bbr[2] = m_rangeCenter[2] - (m_rangeExtend[2] / 2.0);
 
-    m_btl[0] = m_rangeCenter.x - (m_rangeExtend.x / 2.0);
-    m_btl[1] = m_rangeCenter.y + (m_rangeExtend.y / 2.0);
-    m_btl[2] = m_rangeCenter.z + (m_rangeExtend.z / 2.0);
+    m_btl[0] = m_rangeCenter[0] - (m_rangeExtend[0] / 2.0);
+    m_btl[1] = m_rangeCenter[1] + (m_rangeExtend[1] / 2.0);
+    m_btl[2] = m_rangeCenter[2] + (m_rangeExtend[2] / 2.0);
 
-    m_btr[0] = m_rangeCenter.x + (m_rangeExtend.x / 2.0);
-    m_btr[1] = m_rangeCenter.y + (m_rangeExtend.y / 2.0);
-    m_btr[2] = m_rangeCenter.z + (m_rangeExtend.z / 2.0);
+    m_btr[0] = m_rangeCenter[0] + (m_rangeExtend[0] / 2.0);
+    m_btr[1] = m_rangeCenter[1] + (m_rangeExtend[1] / 2.0);
+    m_btr[2] = m_rangeCenter[2] + (m_rangeExtend[2] / 2.0);
 }

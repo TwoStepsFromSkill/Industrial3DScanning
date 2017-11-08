@@ -193,14 +193,14 @@ void MainWindow::updateSidebarWidgetData()
 
     for (const auto& point : m_points)
     {
-        xMin = point.x < xMin ? point.x : xMin;
-        xMax = point.x > xMax ? point.x : xMax;
+        xMin = point[0] < xMin ? point[0] : xMin;
+        xMax = point[0] > xMax ? point[0] : xMax;
 
-        yMin = point.y < yMin ? point.y : yMin;
-        yMax = point.y > yMax ? point.y : yMax;
+        yMin = point[1] < yMin ? point[1] : yMin;
+        yMax = point[1] > yMax ? point[1] : yMax;
 
-        zMin = point.z < zMin ? point.z : zMin;
-        zMax = point.z > zMax ? point.z : zMax;
+        zMin = point[2] < zMin ? point[2] : zMin;
+        zMax = point[2] > zMax ? point[2] : zMax;
     }
 
     m_rangeWidget->resetValueRange(xMin, xMax, yMin, yMax, zMin, zMax);
@@ -293,11 +293,10 @@ void MainWindow::computeAndVisualizeNearestNeighbor()
     m_nearestWidget->getQueryPoint(xyz);
 
     auto startTime = std::chrono::system_clock::now();
-	Point3d res = findNearestPoint_Elke(m_kdTree, Point3d(xyz[0], xyz[1], xyz[2]));
-    //nearestNeighbor_daniel(m_kdTree, Point3d(xyz[0], xyz[1], xyz[2]));
+	//Point3d res = findNearestPoint_Elke(m_kdTree, Point3d(xyz[0], xyz[1], xyz[2]));
+    Point3d res = nearestNeighbor_daniel(m_kdTree, Point3d(xyz[0], xyz[1], xyz[2]));
     duration_micro elapsed = std::chrono::system_clock::now() - startTime;
     std::cout << "Found NearestNeighbor! Took [" << elapsed.count() << "µs]\n";
-    std::cout << res.x << " " << res.y << " " << res.z << "\n";
 
     emit nearestNeighborResultPointChange(res);
     emit drawingNearestNeighborResultChanged(true);

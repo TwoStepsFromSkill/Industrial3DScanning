@@ -1,20 +1,17 @@
-//the following #-syntax at the begin AND end of this file is an "include guard". 
-//It ensures that the compiler include/uses this file only once (if it used multiple times)
 #ifndef MY_POINT_H
 #define MY_POINT_H
 
-//Definition of Point3d structure (our 3d Vector)
+#include <cstdlib>
+
 struct Point3d
 {
-public:	
-    Point3d() /// < constructor of this object
-    {
-        x = 0; y = 0; z = 0;
-    }
-    Point3d(double _x, double _y, double _z) ///< another constructor of this class
-    {
-        x = _x; y = _y; z = _z;
-    }
+    Point3d()
+        : data{0.0, 0.0, 0.0}
+    {}
+
+    Point3d(double _x, double _y, double _z)
+        : data{_x, _y, _z}
+    {}
 
     //custom operators that enable vector algebra
     //these operator are marked CONST because they don't change member variables of this class
@@ -28,7 +25,10 @@ public:
     Point3d& operator -= (const Point3d& p2); // += operation of two points (pt1-= pt2  -> pt1 = pt1 - pt2)
     Point3d& operator *= (double scalar);     // *= multiplication with a scalar (pt1*= s  -> pt1 = pt1 * s)
 
-    double x,y,z;
+    double& operator [] (std::size_t index);
+    const double& operator [] (std::size_t index) const;
+
+    double data[3];
 };
 
 double  sqr(double value);                                  ///< returns the square of a value

@@ -39,19 +39,19 @@ Node* KDTree::buildKDTree(Point3d* rangeBegin, Point3d* rangeEnd, unsigned int d
 	{
 		std::sort(rangeBegin, rangeEnd, sortByXvalue);
 		pointAtMedianPosition = (rangeBegin + medianPosition);
-		medianValue = pointAtMedianPosition->x;
+		medianValue = (*pointAtMedianPosition)[0];
 	}
 	else if(currentDimension == 1)
 	{
 		std::sort(rangeBegin, rangeEnd, sortByYvalue);
 		pointAtMedianPosition = (rangeBegin + medianPosition);
-		medianValue = pointAtMedianPosition->y;
+		medianValue = (*pointAtMedianPosition)[1];
 	}
 	else
 	{
 		std::sort(rangeBegin, rangeEnd, sortByZvalue);
 		pointAtMedianPosition = (rangeBegin + medianPosition);
-		medianValue = pointAtMedianPosition->z;
+		medianValue = (*pointAtMedianPosition)[2];
 	}
 
 	//OK range is sorted, we create a new childNode
@@ -76,7 +76,7 @@ Node* KDTree::buildKDTree(Point3d* rangeBegin, Point3d* rangeEnd, unsigned int d
 
 bool KDTree::sortByXvalue(const Point3d& p1, const Point3d& p2)
 {
-	if (p1.x < p2.x)
+	if (p1[0] < p2[0])
 		return true;
 	else
 		return false;
@@ -84,7 +84,7 @@ bool KDTree::sortByXvalue(const Point3d& p1, const Point3d& p2)
 
 bool KDTree::sortByYvalue(const Point3d& p1, const Point3d& p2)
 {
-	if (p1.y < p2.y)
+	if (p1[1] < p2[1])
 		return true;
 	else
 		return false;
@@ -92,7 +92,7 @@ bool KDTree::sortByYvalue(const Point3d& p1, const Point3d& p2)
 
 bool KDTree::sortByZvalue(const Point3d& p1, const Point3d& p2)
 {
-	if (p1.z < p2.z)
+	if (p1[2] < p2[2])
 		return true;
 	else
 		return false;
@@ -121,9 +121,9 @@ void queryRange_impl(Node* tree, const double minMax[6], unsigned int depth, std
         {
             Point3d pt = *start;
 
-            if (pt.x > minMax[0] && pt.x < minMax[1]
-                && pt.y > minMax[2] && pt.y < minMax[3]
-                && pt.z > minMax[4] && pt.z < minMax[5])
+            if (pt[0] > minMax[0] && pt[0] < minMax[1]
+                && pt[1] > minMax[2] && pt[1] < minMax[3]
+                && pt[2] > minMax[4] && pt[2] < minMax[5])
             {
                 out.push_back(*start);
             }
@@ -148,7 +148,7 @@ Point3d nearestNeighbor_daniel(Node* tree, const Point3d& queryPoint)
     Point3d minPoint(std::numeric_limits<double>::lowest(),
                      std::numeric_limits<double>::lowest(),
                      std::numeric_limits<double>::lowest());
-    double query[3] = {queryPoint.x, queryPoint.y, queryPoint.z};
+    double query[3] = {queryPoint[0], queryPoint[1], queryPoint[2]};
 	nearestNeighbor_daniel_impl(tree, query, &minDist, &minPoint, 0);
 	return minPoint;
 }
@@ -166,9 +166,9 @@ void nearestNeighbor_daniel_impl(Node* tree, const double* queryPoint, double* m
 		while (start != tree->ptrLastPoint)
 		{
 			Point3d pt = *start;
-			double dist = std::sqrt(sqr(pt.x - queryPoint[0])
-				+ sqr(pt.y - queryPoint[1])
-				+ sqr(pt.z - queryPoint[2]));
+			double dist = std::sqrt(sqr(pt[0] - queryPoint[0])
+				+ sqr(pt[1] - queryPoint[1])
+				+ sqr(pt[2] - queryPoint[2]));
 			if (dist < *minDist)
 			{
 				*minDist = dist;
@@ -208,7 +208,7 @@ Point3d findNearestPoint_Elke(Node* tree, const Point3d& queryPoint)
     *givenPoint = queryPoint;
 
 	insertGivenPoint(tree, &minDist, 0, &minPoint);
-//	findNearestPointRecursiveley_Elke(tree, &minDist,0,&minPoint);
+	findNearestPointRecursiveley_Elke(tree, &minDist,0,&minPoint);
 
 	return minPoint;
 }
@@ -280,23 +280,7 @@ void insertGivenPoint(Node* tree, double* currDist, unsigned int depth, Point3d*
 
 double getDimension(Point3d point, unsigned int depth)
 {
-	unsigned int dimension = depth % 3;
-	double currentPosition = 0;
-	switch (dimension)
-	{
-	case 0:
-		currentPosition = point.x;
-		break;
-	case 1:
-		currentPosition = point.y;
-		break;
-	case 2:
-		currentPosition = point.z;
-		break;
-	default:
-		break;
-	}
-	return currentPosition;
+	return point[depth % 3];
 }
 
 
