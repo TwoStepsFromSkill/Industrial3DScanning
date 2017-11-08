@@ -152,6 +152,7 @@ Point3d nearestNeighbor_daniel(Node* tree, const Point3d& queryPoint)
 	nearestNeighbor_daniel_impl(tree, query, &minDist, &minPoint, 0);
 	return minPoint;
 }
+
 void nearestNeighbor_daniel_impl(Node* tree, const double* queryPoint, double* minDist,
 	Point3d* minPoint, unsigned int depth)
 {
@@ -198,18 +199,16 @@ void nearestNeighbor_daniel_impl(Node* tree, const double* queryPoint, double* m
 	}
 }
 Point3d findNearestPoint_Elke(Node* tree, const Point3d& queryPoint)
-{	
+{
 	double minDist = std::numeric_limits<double>::max();
 	Point3d minPoint(std::numeric_limits<double>::lowest(),
 		std::numeric_limits<double>::lowest(),
 		std::numeric_limits<double>::lowest());
-	
-	givenPoint->x = queryPoint.x;
-	givenPoint->y = queryPoint.y;
-	givenPoint->z = queryPoint.z;
-	
+
+    *givenPoint = queryPoint;
+
 	insertGivenPoint(tree, &minDist, 0, &minPoint);
-	findNearestPointRecursiveley_Elke(tree, &minDist,0,&minPoint);
+//	findNearestPointRecursiveley_Elke(tree, &minDist,0,&minPoint);
 
 	return minPoint;
 }
@@ -226,7 +225,7 @@ void findNearestPointRecursiveley_Elke(Node* tree, double* currDist, unsigned in
 
 	// If leaf reached -> Check left child
 	if (!tree->leftChild && !tree->rightChild)
-	{		
+	{
 		if (distance3d(*tree->ptrFirstPoint, *givenPoint) < *currDist)
 		{
 			*currDist = distance3d(*tree->ptrFirstPoint, *givenPoint);
@@ -234,7 +233,7 @@ void findNearestPointRecursiveley_Elke(Node* tree, double* currDist, unsigned in
 		}
 		return;
 	}
-	
+
 	// givenPoint is actually on the left side of the tree
 	if (distToMedian <= 0)
 	{
@@ -244,21 +243,21 @@ void findNearestPointRecursiveley_Elke(Node* tree, double* currDist, unsigned in
 			findNearestPointRecursiveley_Elke(tree->rightChild, currDist, depth + 1, currentPoint);
 		}
 	}
-	else 
+	else
 	{
 		findNearestPointRecursiveley_Elke(tree->rightChild, currDist, depth + 1, currentPoint);
 		if (*currDist > abs(distToMedian))
 		{
 			findNearestPointRecursiveley_Elke(tree->leftChild, currDist, depth + 1, currentPoint);
-		}		
-	}	
+		}
+	}
 }
 
 void insertGivenPoint(Node* tree, double* currDist, unsigned int depth, Point3d* currentPoint)
 {
 	if (!tree->leftChild && !tree->rightChild)
 	{
-		currentPoint = tree->ptrFirstPoint;
+		*currentPoint = *tree->ptrFirstPoint;
 		*currDist = distance3d(*currentPoint, *givenPoint);
 		return;
 	}
@@ -269,12 +268,12 @@ void insertGivenPoint(Node* tree, double* currDist, unsigned int depth, Point3d*
 		if (tree->median <= givenPointDimension)
 		{
 			depth++;
-			insertGivenPoint(tree->leftChild, currDist, depth, currentPoint);
+			insertGivenPoint(tree->rightChild, currDist, depth, currentPoint);
 		}
 		else
 		{
 			depth++;
-			insertGivenPoint(tree->rightChild, currDist, depth, currentPoint);
+			insertGivenPoint(tree->leftChild, currDist, depth, currentPoint);
 		}
 	}
 }
@@ -300,5 +299,5 @@ double getDimension(Point3d point, unsigned int depth)
 	return currentPosition;
 }
 
-    
+
 
