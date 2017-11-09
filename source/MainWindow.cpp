@@ -301,3 +301,29 @@ void MainWindow::computeAndVisualizeNearestNeighbor()
     emit nearestNeighborResultPointChange(res);
     emit drawingNearestNeighborResultChanged(true);
 }
+
+/*
+ * Smoothing
+ * =========
+ * std::vector<Point3d> smoothPoints(const std::vector<Point3d>& points, Node* rootNode, double radius);
+ *  - Gibt einen neuen Vektor mit den geglätteten Punkten zurück
+ *  - Bekommt die alten (originalen) Punkte
+ *  - Bekommt den Baum für die Nachbarschaftsanfragen
+ *  - Bekommt einen Nachbarschaftsradius
+ *
+ * Die Punkte die dann rauskommen können wir separat abspeichern. Dann kann man in der Visualisierung
+ * leicht zwischen Originalpunktewolke und dem Glättungsergebnis hin und her schalten. Wenn einem
+ * das Ergebnis nicht gefällt, kann man dann beispielsweise den Radius erhöhen oder ähnliches und das
+ * ganze nochmal ausführen.
+ *
+ *
+ * Thinning
+ * ========
+ * std::vector<Point3d> thinPoints(const std::vector<Point3d>& points, Node* rootNode, double minDist);
+ *  - Gibt einen neuen Vektor mit den reduzierten Punkten zurück
+ *  - Bekommt die alten (originalen) Punkte
+ *  - Bekommt den Baum für die Nachbarschaftsanfragen
+ *  - Bekommt einen minimalen Abstand der zwischen den Ergebnispunkten vorliegen muss
+ *
+ * Für die Visualisierung des Ergebnisses gilt das gleiche wie oben.
+ */
