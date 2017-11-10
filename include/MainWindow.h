@@ -12,6 +12,8 @@ class QHBoxLayout;
 class QTabWidget;
 class RangeQueryWidget;
 class NearestNeighborWidget;
+class SmoothingWidget;
+class ThinningWidget;
 
 class MainWindow : public QMainWindow
 {
@@ -34,6 +36,10 @@ private:
 
     NearestNeighborWidget* m_nearestWidget;
     bool m_liveUpdateNearestNeighbor;
+
+    SmoothingWidget* m_smoothingWidget;
+
+    ThinningWidget* m_thinningWidget;
 
     std::vector<Point3d> m_points;
     Node* m_kdTree;

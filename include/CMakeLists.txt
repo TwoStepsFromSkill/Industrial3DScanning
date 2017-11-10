@@ -8,4 +8,6 @@ set(HEADER
     ${CMAKE_CURRENT_SOURCE_DIR}/BaseTabWidget.h
     ${CMAKE_CURRENT_SOURCE_DIR}/RangeQueryWidget.h
     ${CMAKE_CURRENT_SOURCE_DIR}/NearestNeighborWidget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/SmoothingWidget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ThinningWidget.h
     PARENT_SCOPE)

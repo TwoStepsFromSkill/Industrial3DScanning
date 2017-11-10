@@ -8,4 +8,6 @@ set(SOURCE
     ${CMAKE_CURRENT_SOURCE_DIR}/KDTree.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/RangeQueryWidget.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/NearestNeighborWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/SmoothingWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ThinngingWidget.cpp
     PARENT_SCOPE)

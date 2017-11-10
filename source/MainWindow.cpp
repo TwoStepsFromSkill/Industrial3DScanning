@@ -14,6 +14,8 @@
 #include "BaseTabWidget.h"
 #include "RangeQueryWidget.h"
 #include "NearestNeighborWidget.h"
+#include "SmoothingWidget.h"
+#include "ThinningWidget.h"
 
 using duration_micro = std::chrono::duration<double, std::micro>;
 using duration_milli = std::chrono::duration<double, std::milli>;
@@ -40,6 +42,12 @@ MainWindow::MainWindow()
 
     m_nearestWidget = new NearestNeighborWidget(this);
     m_tabWidget->addTab(m_nearestWidget, QString("Nearest Neighboor"));
+
+    m_smoothingWidget = new SmoothingWidget(this);
+    m_tabWidget->addTab(m_smoothingWidget, QString("Smoothing"));
+
+    m_thinningWidget = new ThinningWidget(this);
+    m_tabWidget->addTab(m_thinningWidget, QString("Thinning"));
 
     m_mainLayout->addWidget(m_tabWidget);
 
