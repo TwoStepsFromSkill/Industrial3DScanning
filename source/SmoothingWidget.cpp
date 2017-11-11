@@ -61,3 +61,8 @@ void SmoothingWidget::blockSlider(bool value)
 {
     m_radius->blockSignals(value);
 }
+
+void SmoothingWidget::getRadius(double* radius)
+{
+	*radius = m_radius->value;
+}
