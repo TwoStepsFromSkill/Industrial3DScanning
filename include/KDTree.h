@@ -30,6 +30,10 @@ std::vector<Point3d> queryRange(Node* tree, const double minMax[6]);
 void queryRange_impl(Node* tree, const double minMax[6], unsigned int depth,
                      std::vector<Point3d>& out);
 
+std::vector<Point3d> queryRadius(Node* tree, const double radius, Point3d centerPoint);
+void queryRadius_impl(Node* tree, const double radius, unsigned int depth,
+	std::vector<Point3d>& out, Point3d centerPoint);
+
 Point3d nearestNeighbor_daniel(Node* tree, const Point3d& queryPoint);
 void nearestNeighbor_daniel_impl(Node* tree, const double* queryPoint, double* minDist,
                                        Point3d* minPoint, unsigned int depth);

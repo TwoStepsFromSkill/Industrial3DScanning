@@ -142,6 +142,50 @@ void queryRange_impl(Node* tree, const double minMax[6], unsigned int depth, std
     }
 }
 
+std::vector<Point3d> queryRadius(Node* tree, const double radius, Point3d centerPoint)
+{
+	std::vector<Point3d> result;
+	queryRadius_impl(tree, radius, 0, result, centerPoint);
+
+	return result;
+}
+void queryRadius_impl(Node* tree, const double radius, unsigned int depth,
+	std::vector<Point3d>& out, Point3d centerPoint)
+{
+	// Stepped to deep
+	if (!tree)
+		return;
+
+	// Reached a leaf -> check if points are inside range and add the ones that are
+	if (!tree->leftChild && !tree->rightChild)
+	{
+		auto* start = tree->ptrFirstPoint;
+
+		while (start != tree->ptrLastPoint)
+		{
+			Point3d pt = *start;
+			
+			double euclDist = distance3d(pt, centerPoint);
+			if (euclDist <= radius)
+			{
+				out.push_back(*start);
+			}
+
+			++start;
+		}
+	}
+	else
+	{
+		unsigned int dimension = depth % 3;
+
+		if (centerPoint[dimension] <= tree->median)
+			queryRadius_impl(tree->leftChild, radius, dimension + 1, out, centerPoint);
+		if (centerPoint[dimension] > tree->median)
+			queryRadius_impl(tree->rightChild, radius, dimension + 1, out, centerPoint);
+	}
+}
+
+
 Point3d nearestNeighbor_daniel(Node* tree, const Point3d& queryPoint)
 {
     double minDist = std::numeric_limits<double>::max();

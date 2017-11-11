@@ -144,6 +144,8 @@ void MainWindow::openFile()
 
     updateSidebarWidgetData();
     m_glWidget->drawingRangeQueryBoxChange(true);
+
+	testRangeRadius();
 }
 
 void MainWindow::changeProjection()
@@ -335,3 +337,30 @@ void MainWindow::computeAndVisualizeNearestNeighbor()
  *
  * Für die Visualisierung des Ergebnisses gilt das gleiche wie oben.
  */
+
+std::vector<Point3d> MainWindow::smoothPoints(const std::vector<Point3d>& points, Node* rootNode, double radius)
+{
+
+
+	return points;
+}
+
+void  MainWindow::testRangeRadius()
+{
+	const double radius = 0.5;
+	const Point3d centerPoint(-0.0005,0.0347,-0.0237);
+	std::vector<Point3d> points = queryRadius(m_kdTree,radius, centerPoint);
+	int pc_Size = points.size();
+	
+	if (!points.empty())
+	{ /* Drawing Points with VertexArrays */
+		glEnableClientState(GL_VERTEX_ARRAY);
+		static GLubyte pink[] = {255, 175, 175, 0};
+		glPointSize(pc_Size);
+		glColor4ubv(pink);
+		glVertexPointer(3, GL_DOUBLE, sizeof(Point3d), &m_points[0]);
+		glDrawArrays(GL_POINTS, 0, (unsigned int)m_points.size());
+
+		glDisableClientState(GL_VERTEX_ARRAY);
+	}
+}
