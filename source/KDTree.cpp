@@ -178,9 +178,9 @@ void queryRadius_impl(Node* tree, const double radius, unsigned int depth,
 	{
 		unsigned int dimension = depth % 3;
 
-		if (centerPoint[dimension] <= tree->median)
+		if (centerPoint[dimension] - radius <= tree->median)
 			queryRadius_impl(tree->leftChild, radius, dimension + 1, out, centerPoint);
-		if (centerPoint[dimension] > tree->median)
+		if (centerPoint[dimension] + radius > tree->median)
 			queryRadius_impl(tree->rightChild, radius, dimension + 1, out, centerPoint);
 	}
 }
