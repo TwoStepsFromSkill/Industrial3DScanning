@@ -116,10 +116,9 @@ MainWindow::MainWindow()
     m_rangeWidget->activate();
 
 	// TODO: Smooting section
-	connect(m_smoothingWidget, SIGNAL(widgetEnabled(bool)),
-		m_glWidget, SLOT(applySmoothing()));
+	connect(m_smoothingWidget, SIGNAL(applyPressed()), this, SLOT(applySmoothing()));
+    connect(this, SIGNAL(drawingSmoothedPointsChange(bool)), m_glWidget, SLOT(drawingSmoothedPointsChanged(bool)));
 
-	
 }
 
 void MainWindow::openFile()
@@ -331,7 +330,9 @@ void MainWindow::computeAndVisualizeSmoothing()
 	m_smoothingWidget->getRadius(&radius);
 
 	std::vector<Point3d> smoothedPoints = smoothPoints(m_points, m_kdTree, radius);
+    m_glWidget->setSmoothedPoints(smoothedPoints);
 
+    emit drawingSmoothedPointsChange(true);
 }
 
 /*
@@ -365,7 +366,7 @@ std::vector<Point3d> MainWindow::smoothPoints(const std::vector<Point3d>& points
 		std::vector<Point3d> smoothedPoints;
 	Point3d smoothedPointAv;
 	int sizePoints = points.size();
-	
+
 	for (int i = 0; i < sizePoints; i++)
 	{
 		Point3d point = points.at(i);
@@ -373,12 +374,12 @@ std::vector<Point3d> MainWindow::smoothPoints(const std::vector<Point3d>& points
 		for (int j = 0; j < neighborPoints.size(); j++)
 		{
 			// Smoothing with average operator TODO: gaussian smoothing
-			smoothedPointAv += neighborPoints.at(j);			
+			smoothedPointAv += neighborPoints.at(j);
 		}
 		Point3d smoothedPoint(smoothedPointAv[0] / neighborPoints.size(), smoothedPointAv[1] / neighborPoints.size(), smoothedPointAv[2] / neighborPoints.size());
 		smoothedPoints.push_back(smoothedPoint);
 	}
-	
+
 	return smoothedPoints;
 }
 

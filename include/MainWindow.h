@@ -56,13 +56,15 @@ signals:
     void nearestNeighborQueryPointChange(const Point3d&);
     void nearestNeighborResultPointChange(const Point3d&);
 
+    void drawingSmoothedPointsChange(bool);
+
 private:
     void loadFileXYZ(const char* filename, std::vector<Point3d>& points);
     void updateSidebarWidgetData();
 
     void computeAndVisualizeRangeQuery();
 	void computeAndVisualizeNearestNeighbor();
-	
+
 	void computeAndVisualizeSmoothing();
 	std::vector<Point3d> smoothPoints(const std::vector<Point3d>& points, Node* rootNode, double radius);
 
@@ -80,7 +82,7 @@ private slots:
 
     void applyRangeQueryPressed();
     void hideRangeQueryPressed();
-	
+
     // Nearest neighbor
     void nearestNeighborQueryPointChanged(double, double, double);
     void nearestNeighborLiveUpdateChange(bool value);
@@ -90,7 +92,7 @@ private slots:
 
 	// Smoothing
 	void applySmoothing();
-	
+
 };
 
 #endif

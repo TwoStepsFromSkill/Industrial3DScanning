@@ -28,7 +28,9 @@ public:
     void setPoints    (std::vector<Point3d>& points)   { m_points = points; updateScene(); }
 
     //access to data
-    std::vector<Point3d>& points() { return m_points; } //return reference not the copy!
+    std::vector<Point3d>& points() { return m_points; }
+
+    void setSmoothedPoints(const std::vector<Point3d>& smoothedPoints) { m_smoothedPoints = smoothedPoints; }
 
     //return camera
     GLcamera& camera(){return m_camera;}
@@ -50,6 +52,9 @@ public slots:
     void nearestNeighborQueryPointChanged(const Point3d& queryPoint);
     void nearestNeighborResultPointChanged(const Point3d& resultPoint);
 
+    // Smoothed points
+    void drawingSmoothedPointsChanged(bool value);
+
 private:
     void loadDrawSettings();
     void writeSettings();
@@ -68,6 +73,8 @@ private:
 
     std::vector<Point3d> m_points;    //point data
     std::vector<Point3d> m_pointsInRange;
+    std::vector<Point3d> m_smoothedPoints;
+    std::vector<Point3d> m_thinnedPoints;
 
     QPoint               m_mouseLastPos;  //last mouse position clicked
 
@@ -97,6 +104,9 @@ private:
     Point3d m_nearestResultPoint;
     bool m_drawNearestQueryPoint;
     bool m_drawNearestResultPoint;
+
+    // Smoothing
+    bool m_drawSmoothedPoints;
 
     // Colors and draw settings
     unsigned char m_PC_color[4];

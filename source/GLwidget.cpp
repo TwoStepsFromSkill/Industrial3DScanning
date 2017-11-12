@@ -23,6 +23,7 @@ GLwidget::GLwidget(QWidget* parent)
     , m_drawRangeQueryResult(false)
     , m_drawNearestQueryPoint(false)
     , m_drawNearestResultPoint(false)
+    , m_drawSmoothedPoints(false)
 {
     loadDrawSettings();
 }
@@ -56,7 +57,7 @@ void GLwidget::paintGL()
     drawBackground();
 
     //Draw pointclouds
-    if (!m_points.empty())
+    if (!m_points.empty() && !(m_drawSmoothedPoints))
     { /* Drawing Points with VertexArrays */
         glEnableClientState(GL_VERTEX_ARRAY);
 
@@ -134,6 +135,18 @@ void GLwidget::paintGL()
         glBegin(GL_POINTS);
             glVertex3dv(&m_nearestResultPoint[0]);
         glEnd();
+    }
+
+    if (!m_smoothedPoints.empty() && m_drawSmoothedPoints)
+    {
+        glEnableClientState(GL_VERTEX_ARRAY);
+
+        glPointSize(m_PC_size);
+        glColor4ubv(m_PC_color);
+        glVertexPointer(3, GL_DOUBLE, sizeof(Point3d), &m_smoothedPoints[0]);
+        glDrawArrays(GL_POINTS, 0, (unsigned int)m_smoothedPoints.size());
+
+        glDisableClientState(GL_VERTEX_ARRAY);
     }
 
     //draw coordinate frame
@@ -219,6 +232,12 @@ void GLwidget::nearestNeighborQueryPointChanged(const Point3d& queryPoint)
 void GLwidget::nearestNeighborResultPointChanged(const Point3d& resultPoint)
 {
     m_nearestResultPoint = resultPoint;
+    this->update();
+}
+
+void GLwidget::drawingSmoothedPointsChanged(bool value)
+{
+    m_drawSmoothedPoints = value;
     this->update();
 }
 
