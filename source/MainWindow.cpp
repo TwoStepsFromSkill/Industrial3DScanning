@@ -114,6 +114,12 @@ MainWindow::MainWindow()
             m_glWidget, SLOT(nearestNeighborResultPointChanged(const Point3d&)));
 
     m_rangeWidget->activate();
+
+	// TODO: Smooting section
+	connect(m_smoothingWidget, SIGNAL(widgetEnabled(bool)),
+		m_glWidget, SLOT(applySmoothing()));
+
+	
 }
 
 void MainWindow::openFile()
@@ -145,7 +151,6 @@ void MainWindow::openFile()
     updateSidebarWidgetData();
     m_glWidget->drawingRangeQueryBoxChange(true);
 
-	testRangeRadius();
 }
 
 void MainWindow::changeProjection()
@@ -312,6 +317,23 @@ void MainWindow::computeAndVisualizeNearestNeighbor()
     emit drawingNearestNeighborResultChanged(true);
 }
 
+void MainWindow::applySmoothing()
+{
+	if (m_kdTree)
+	{
+		computeAndVisualizeSmoothing();
+	}
+}
+
+void MainWindow::computeAndVisualizeSmoothing()
+{
+	double radius;
+	m_smoothingWidget->getRadius(&radius);
+
+	std::vector<Point3d> smoothedPoints = smoothPoints(m_points, m_kdTree, radius);
+
+}
+
 /*
  * Smoothing
  * =========
@@ -340,27 +362,23 @@ void MainWindow::computeAndVisualizeNearestNeighbor()
 
 std::vector<Point3d> MainWindow::smoothPoints(const std::vector<Point3d>& points, Node* rootNode, double radius)
 {
-
-
-	return points;
-}
-
-void  MainWindow::testRangeRadius()
-{
-	const double radius = 0.5;
-	const Point3d centerPoint(-0.0005,0.0347,-0.0237);
-	std::vector<Point3d> points = queryRadius(m_kdTree,radius, centerPoint);
-	int pc_Size = points.size();
+		std::vector<Point3d> smoothedPoints;
+	Point3d smoothedPointAv;
+	int sizePoints = points.size();
 	
-	if (!points.empty())
-	{ /* Drawing Points with VertexArrays */
-		glEnableClientState(GL_VERTEX_ARRAY);
-		static GLubyte pink[] = {255, 175, 175, 0};
-		glPointSize(pc_Size);
-		glColor4ubv(pink);
-		glVertexPointer(3, GL_DOUBLE, sizeof(Point3d), &m_points[0]);
-		glDrawArrays(GL_POINTS, 0, (unsigned int)m_points.size());
-
-		glDisableClientState(GL_VERTEX_ARRAY);
+	for (int i = 0; i < sizePoints; i++)
+	{
+		Point3d point = points.at(i);
+		std::vector<Point3d> neighborPoints = queryRadius(m_kdTree, radius, point);
+		for (int j = 0; j < neighborPoints.size(); j++)
+		{
+			// Smoothing with average operator TODO: gaussian smoothing
+			smoothedPointAv += neighborPoints.at(j);			
+		}
+		Point3d smoothedPoint(smoothedPointAv[0] / neighborPoints.size(), smoothedPointAv[1] / neighborPoints.size(), smoothedPointAv[2] / neighborPoints.size());
+		smoothedPoints.push_back(smoothedPoint);
 	}
+	
+	return smoothedPoints;
 }
+

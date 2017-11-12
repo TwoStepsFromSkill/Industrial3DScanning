@@ -61,9 +61,11 @@ private:
     void updateSidebarWidgetData();
 
     void computeAndVisualizeRangeQuery();
-	void testRangeRadius();
 	void computeAndVisualizeNearestNeighbor();
 	
+	void computeAndVisualizeSmoothing();
+	std::vector<Point3d> smoothPoints(const std::vector<Point3d>& points, Node* rootNode, double radius);
+
 private slots:
     void openFile();
     void changeProjection();
@@ -87,7 +89,8 @@ private slots:
     void hideNearestNeighborPressed();
 
 	// Smoothing
-	std::vector<Point3d> smoothPoints(const std::vector<Point3d>& points, Node* rootNode, double radius);
+	void applySmoothing();
+	
 };
 
 #endif
