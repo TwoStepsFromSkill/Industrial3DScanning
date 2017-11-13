@@ -327,8 +327,8 @@ void MainWindow::applySmoothing()
 void MainWindow::computeAndVisualizeSmoothing()
 {
 	double radius;
-	m_smoothingWidget->getRadius(&radius);
-
+	//m_smoothingWidget->getRadius(&radius);
+	radius = 0.001;
 	std::vector<Point3d> smoothedPoints = smoothPoints(m_points, m_kdTree, radius);
     m_glWidget->setSmoothedPoints(smoothedPoints);
 
@@ -363,21 +363,22 @@ void MainWindow::computeAndVisualizeSmoothing()
 
 std::vector<Point3d> MainWindow::smoothPoints(const std::vector<Point3d>& points, Node* rootNode, double radius)
 {
-		std::vector<Point3d> smoothedPoints;
-	Point3d smoothedPointAv;
-	int sizePoints = points.size();
+	std::vector<Point3d> smoothedPoints;
 
-	for (int i = 0; i < sizePoints; i++)
+	std::vector<Point3d>::const_iterator it;	
+	for(it = points.begin(); it!=points.end();it++)
 	{
-		Point3d point = points.at(i);
+		Point3d point = *it;
+		Point3d smoothedPointAv;
 		std::vector<Point3d> neighborPoints = queryRadius(m_kdTree, radius, point);
-		for (int j = 0; j < neighborPoints.size(); j++)
+		for (std::vector<Point3d>::iterator it2 = neighborPoints.begin(); it2 != neighborPoints.end(); it2++)
 		{
 			// Smoothing with average operator TODO: gaussian smoothing
-			smoothedPointAv += neighborPoints.at(j);
+			smoothedPointAv += (*it2) * (1/ neighborPoints.size());
 		}
-		Point3d smoothedPoint(smoothedPointAv[0] / neighborPoints.size(), smoothedPointAv[1] / neighborPoints.size(), smoothedPointAv[2] / neighborPoints.size());
-		smoothedPoints.push_back(smoothedPoint);
+		//smoothedPointAv += point*((neighborPoints.size() - 1) / neighborPoints.size()) + smoothedPointAv*(1 / neighborPoints.size());
+		smoothedPoints.push_back(smoothedPointAv);
+		
 	}
 
 	return smoothedPoints;
