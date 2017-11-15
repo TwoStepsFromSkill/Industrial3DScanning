@@ -62,4 +62,22 @@ qt5_use_modules(Industrial3DScanning Widgets OpenGL)
 # Link against all required libraries
 target_link_libraries(Industrial3DScanning ${QT_LIBRARIES} ${OPENGL_LIBRARIES})
 
+option (USE_OPENMP "Use OpenMP" ON)
+
+if (USE_OPENMP)
+    find_package(OpenMP)
+    find_package(Threads)
+
+    if (THREADS_FOUND)
+        target_link_libraries(Industrial3DScanning ${CMAKE_THREAD_LIBS_INIT})
+
+        if (OPENMP_FOUND)
+            target_compile_options(Industrial3DScanning PRIVATE "${OpenMP_CXX_FLAGS}")
+            set_target_properties(Industrial3DScanning PROPERTIES LINK_FLAGS "${OpenMP_CXX_FLAGS}")
+        endif()
+    else()
+        message(FATAL_ERROR "Could not locate thread library!")
+    endif()
+endif()
+
 set(CONFIGURED_ONCE TRUE CACHE INTERNAL "A flag showing that CMake has been configured at least once.")

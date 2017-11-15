@@ -29,7 +29,8 @@ SmoothingWidget::SmoothingWidget(QWidget* parent)
 
     m_radius = new QDoubleSpinBox(this);
     m_radius->setMinimum(0.0);
-    m_radius->setSingleStep(0.01);
+    m_radius->setSingleStep(0.0001);
+    m_radius->setDecimals(5);
     m_radius->setMaximum(100.0);
 
     m_mainLayout->addWidget(m_radius);

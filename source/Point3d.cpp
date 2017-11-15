@@ -33,7 +33,7 @@ Point3d& Point3d::operator += (const Point3d& p2)
 {
     data[0] += p2[0];
     data[1] += p2[1];
-    data[2] += p2[1];
+    data[2] += p2[2];
     return *this;
 }
 
@@ -42,7 +42,7 @@ Point3d& Point3d::operator -= (const Point3d& p2)
 {
     data[0] -= p2[0];
     data[1] -= p2[1];
-    data[2] -= p2[1];
+    data[2] -= p2[2];
     return *this;
 }
 

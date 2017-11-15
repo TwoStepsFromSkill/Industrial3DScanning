@@ -10,6 +10,7 @@
 #include <fstream>
 #include <limits>
 #include <chrono>
+#include <iostream>
 
 #include "BaseTabWidget.h"
 #include "RangeQueryWidget.h"
@@ -327,11 +328,14 @@ void MainWindow::applySmoothing()
 void MainWindow::computeAndVisualizeSmoothing()
 {
 	double radius;
-	//m_smoothingWidget->getRadius(&radius);
-	radius = 0.001;
-	std::vector<Point3d> smoothedPoints = smoothPoints(m_points, m_kdTree, radius);
-    m_glWidget->setSmoothedPoints(smoothedPoints);
+	m_smoothingWidget->getRadius(&radius);
 
+    auto startTime = std::chrono::system_clock::now();
+        std::vector<Point3d> smoothedPoints = smoothPoints(m_points, m_kdTree, radius);
+    duration_milli elapsed = std::chrono::system_clock::now() - startTime;
+    std::cout << "Finished Smoothing! Took [" << elapsed.count() / 1000.0 << "s]\n";
+
+    m_glWidget->setSmoothedPoints(smoothedPoints);
     emit drawingSmoothedPointsChange(true);
 }
 
@@ -364,21 +368,23 @@ void MainWindow::computeAndVisualizeSmoothing()
 std::vector<Point3d> MainWindow::smoothPoints(const std::vector<Point3d>& points, Node* rootNode, double radius)
 {
 	std::vector<Point3d> smoothedPoints;
+    smoothedPoints.resize(points.size());
 
-	std::vector<Point3d>::const_iterator it;	
-	for(it = points.begin(); it!=points.end();it++)
+#pragma omp parallel for
+	for(std::size_t i = 0; i < points.size(); ++i)
 	{
-		Point3d point = *it;
+		const Point3d& point = points[i];
+
 		Point3d smoothedPointAv;
-		std::vector<Point3d> neighborPoints = queryRadius(m_kdTree, radius, point);
-		for (std::vector<Point3d>::iterator it2 = neighborPoints.begin(); it2 != neighborPoints.end(); it2++)
+		std::vector<Point3d> neighborPoints = queryRadius(rootNode, radius, point);
+
+        for (std::size_t j = 0; j < neighborPoints.size(); ++j)
 		{
-			// Smoothing with average operator TODO: gaussian smoothing
-			smoothedPointAv += (*it2) * (1/ neighborPoints.size());
+			smoothedPointAv += neighborPoints[j];
 		}
-		//smoothedPointAv += point*((neighborPoints.size() - 1) / neighborPoints.size()) + smoothedPointAv*(1 / neighborPoints.size());
-		smoothedPoints.push_back(smoothedPointAv);
-		
+
+		smoothedPointAv *= 1.0 / neighborPoints.size();
+		smoothedPoints[i] = smoothedPointAv;
 	}
 
 	return smoothedPoints;
