@@ -371,7 +371,7 @@ std::vector<Point3d> MainWindow::smoothPoints(const std::vector<Point3d>& points
     smoothedPoints.resize(points.size());
 
 #pragma omp parallel for
-	for(std::size_t i = 0; i < points.size(); ++i)
+	for(int i = 0; i < points.size(); ++i)
 	{
 		const Point3d& point = points[i];
 
