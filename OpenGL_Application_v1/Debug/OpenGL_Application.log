@@ -1,0 +1,3 @@
+﻿  OpenGL_Application.cpp
+c:\users\flori\documents\ovgu\3d scanning\opengl_application_v1\source\opengl_application.cpp(135): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+  OpenGL_Application.vcxproj -> C:\Users\Flori\Documents\OVGU\3D Scanning\OpenGL_Application_v1\Debug\OpenGL_Application.exe
