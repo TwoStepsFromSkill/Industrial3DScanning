@@ -55,6 +55,19 @@ Point3d& Point3d::operator *= (double scalar)
     return *this;
 }
 
+//custom operator that enables the == comparison between two points
+bool Point3d::operator == (const Point3d& p2)
+{
+	return (data[0] == p2[0]) && (data[1] == p2[1]) && (data[2] == p2[2]);
+}
+
+//custom operator that enables the != comparison between two points
+bool Point3d::operator != (const Point3d& p2)
+{
+	return !(*this == p2);
+}
+
+
 //returns the square of a value (unfortunately C++ does not provide this function itself...)
 double sqr(double value)
 {

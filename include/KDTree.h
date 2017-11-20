@@ -42,4 +42,31 @@ Point3d findNearestPoint_Elke(Node* tree, const Point3d& queryPoint);
 void findNearestPointRecursiveley_Elke(Node* tree, double* currDist, unsigned int depth, Point3d* currentPoint);
 void insertGivenPoint(Node* tree, double* currDist, unsigned int depth, Point3d* currentPoint);
 double getDimension(Point3d point, unsigned int depth);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//Spherical Range Query
+std::vector<Point3d*> queryRangeSphere(Node* tree, Point3d* center, const double radius, bool flagging);
+void queryRangeSphere_impl(Node* tree, Point3d* center, const double radius, unsigned int depth, std::vector<Point3d*>& out, bool flagging);
+
+//Thinning
+void homogeneousThinning(Node* globalTree, Node* subTree, const double radius, std::vector<Point3d>& output);
+
 #endif // KD_TREE_H

@@ -6,11 +6,11 @@
 struct Point3d
 {
     Point3d()
-        : data{0.0, 0.0, 0.0}
+        : data{0.0, 0.0, 0.0}, flag_ignore{false}
     {}
 
     Point3d(double _x, double _y, double _z)
-        : data{_x, _y, _z}
+        : data{_x, _y, _z}, flag_ignore{false}
     {}
 
     //custom operators that enable vector algebra
@@ -28,7 +28,11 @@ struct Point3d
     double& operator [] (std::size_t index);
     const double& operator [] (std::size_t index) const;
 
+    bool operator == (const Point3d& p2);	// == comparison of two points (p1 == p2 -> true)
+    bool operator != (const Point3d& p2);	// != comparison of two points (p1 != p2 -> true)
+
     double data[3];
+    bool flag_ignore;
 };
 
 double  sqr(double value);                                  ///< returns the square of a value

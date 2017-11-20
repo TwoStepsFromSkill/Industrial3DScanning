@@ -164,7 +164,7 @@ void queryRadius_impl(Node* tree, const double radius, unsigned int depth,
 		while (start != tree->ptrLastPoint)
 		{
 			Point3d pt = *start;
-			
+
 			double euclDist = distance3d(pt, centerPoint);
 			if (euclDist <= radius)
 			{
@@ -282,7 +282,7 @@ void findNearestPointRecursiveley_Elke(Node* tree, double* currDist, unsigned in
 	if (distToMedian <= 0)
 	{
 		findNearestPointRecursiveley_Elke(tree->leftChild, currDist, depth + 1, currentPoint);
-		if (*currDist > abs(distToMedian))
+		if (*currDist > std::fabs(distToMedian))
 		{
 			findNearestPointRecursiveley_Elke(tree->rightChild, currDist, depth + 1, currentPoint);
 		}
@@ -290,7 +290,7 @@ void findNearestPointRecursiveley_Elke(Node* tree, double* currDist, unsigned in
 	else
 	{
 		findNearestPointRecursiveley_Elke(tree->rightChild, currDist, depth + 1, currentPoint);
-		if (*currDist > abs(distToMedian))
+		if (*currDist > std::fabs(distToMedian))
 		{
 			findNearestPointRecursiveley_Elke(tree->leftChild, currDist, depth + 1, currentPoint);
 		}
@@ -329,3 +329,138 @@ double getDimension(Point3d point, unsigned int depth)
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+std::vector<Point3d*> queryRangeSphere(Node* tree, Point3d* center, const double radius, bool flagging)
+{
+	std::vector<Point3d*> result;
+
+	queryRangeSphere_impl(tree, center, radius, 0, result, flagging);
+
+	return result;
+}
+
+void queryRangeSphere_impl(Node* tree, Point3d* center, const double radius, unsigned int depth, std::vector<Point3d*>& out, bool flagging)
+{
+	// Stepped to deep
+	if (!tree)
+		return;
+
+	// Reached a leaf -> check if points are inside the spherical neighborhood and add the ones that are
+	if (!tree->leftChild && !tree->rightChild)
+	{
+		auto* start = tree->ptrFirstPoint;
+
+		//iterate once
+		while (start != tree->ptrLastPoint)
+		{
+			Point3d pt = *start;
+			//std::cout << "\ncenter: " << Point3dToString(center);
+			//std::cout << "\n    pt: " << Point3dToString(&pt);
+
+			//calculate distance between pt and center
+			const double dist = distance3d(*center, pt);
+			//std::cout << "\ndist = " << dist;
+
+			//flag mode on (required for efficient thinning)
+			if (flagging)
+			{
+				if (dist <= radius)
+				{
+					//add leaf to output vector if it lies within sphere(center, radius)
+					out.push_back(tree->ptrFirstPoint);
+
+					//flag detected point if it's not the current center
+					if (dist != 0)
+					{
+						tree->ptrFirstPoint->flag_ignore = true;
+						//std::cout << "\nflagged: " << Point3dToString(tree->ptrFirstPoint);
+					}
+				}
+			}
+			else //flag mode off
+			{
+				//add leaf to output vector if it lies within sphere(center, radius)
+				if (dist <= radius)
+				{
+					out.push_back(tree->ptrFirstPoint);
+				}
+			}
+
+			++start;
+		}
+	}
+	else //traverse tree
+	{
+		unsigned int dimension = depth % 3;
+
+		//switch dimension for comparison with median
+		double cmpr = (*center)[dimension];
+
+		if (cmpr - radius <= tree->median)
+			queryRangeSphere_impl(tree->leftChild, center, radius, dimension + 1, out, flagging);
+		if (cmpr + radius > tree->median)
+			queryRangeSphere_impl(tree->rightChild, center, radius, dimension + 1, out, flagging);
+	}
+}
+
+//Thinning
+void homogeneousThinning(Node* globalTree, Node* subTree, const double radius, std::vector<Point3d>& output)
+{
+	//stepped to deep
+	if (!subTree)
+		return;
+
+	if (!subTree->leftChild && !subTree->rightChild) //reached a leaf
+	{
+		if (!subTree->ptrFirstPoint->flag_ignore) //leaf hasn't been flagged
+		{
+			//store leaf value as point
+			Point3d& curPoint = *subTree->ptrFirstPoint;
+
+			//add point to output vector
+			output.push_back(curPoint);
+
+			//get points in spherical neighborhood(curPoint, radius) and flag them
+			std::vector<Point3d*> neighborhood = queryRangeSphere(globalTree, &curPoint, radius, true);
+			//std::cout << "\nneighborhood.size: " << neighborhood.size();
+		}
+	}
+	else //traverse tree
+	{
+		homogeneousThinning(globalTree, subTree->leftChild, radius, output);
+		homogeneousThinning(globalTree, subTree->rightChild, radius, output);
+	}
+}
