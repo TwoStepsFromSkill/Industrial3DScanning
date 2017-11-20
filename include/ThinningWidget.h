@@ -18,6 +18,8 @@ public:
     virtual void deactivate() override;
     virtual void activate() override;
 
+    void getRadius(double* radius);
+
 signals:
     void widgetEnabled(bool value);
 

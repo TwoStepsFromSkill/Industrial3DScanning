@@ -31,6 +31,7 @@ public:
     std::vector<Point3d>& points() { return m_points; }
 
     void setSmoothedPoints(const std::vector<Point3d>& smoothedPoints) { m_smoothedPoints = smoothedPoints; }
+    void setThinnedPoints(const std::vector<Point3d>& thinnedPoints) { m_thinnedPoints = thinnedPoints; }
 
     //return camera
     GLcamera& camera(){return m_camera;}
@@ -54,6 +55,9 @@ public slots:
 
     // Smoothed points
     void drawingSmoothedPointsChanged(bool value);
+
+    // Thinned points
+    void drawingThinnedPointsChanged(bool value);
 
 private:
     void loadDrawSettings();
@@ -107,6 +111,9 @@ private:
 
     // Smoothing
     bool m_drawSmoothedPoints;
+
+    // Thinning
+    bool m_drawThinnedPoints;
 
     // Colors and draw settings
     unsigned char m_PC_color[4];

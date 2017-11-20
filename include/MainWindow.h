@@ -57,6 +57,7 @@ signals:
     void nearestNeighborResultPointChange(const Point3d&);
 
     void drawingSmoothedPointsChange(bool);
+    void drawingThinnedPointsChange(bool);
 
 private:
     void loadFileXYZ(const char* filename, std::vector<Point3d>& points);
@@ -67,6 +68,8 @@ private:
 
 	void computeAndVisualizeSmoothing();
 	std::vector<Point3d> smoothPoints(const std::vector<Point3d>& points, Node* rootNode, double radius);
+
+    void computeAndVisualizeThinning();
 
 private slots:
     void openFile();
@@ -92,6 +95,9 @@ private slots:
 
 	// Smoothing
 	void applySmoothing();
+
+    // Thinning
+	void applyThinning();
 
 };
 

@@ -24,6 +24,7 @@ GLwidget::GLwidget(QWidget* parent)
     , m_drawNearestQueryPoint(false)
     , m_drawNearestResultPoint(false)
     , m_drawSmoothedPoints(false)
+    , m_drawThinnedPoints(false)
 {
     loadDrawSettings();
 }
@@ -57,7 +58,7 @@ void GLwidget::paintGL()
     drawBackground();
 
     //Draw pointclouds
-    if (!m_points.empty() && !(m_drawSmoothedPoints))
+    if (!m_points.empty() && !(m_drawSmoothedPoints) && !(m_drawThinnedPoints))
     { /* Drawing Points with VertexArrays */
         glEnableClientState(GL_VERTEX_ARRAY);
 
@@ -145,6 +146,18 @@ void GLwidget::paintGL()
         glColor4ubv(m_PC_color);
         glVertexPointer(3, GL_DOUBLE, sizeof(Point3d), &m_smoothedPoints[0]);
         glDrawArrays(GL_POINTS, 0, (unsigned int)m_smoothedPoints.size());
+
+        glDisableClientState(GL_VERTEX_ARRAY);
+    }
+
+    if (!m_thinnedPoints.empty() && m_drawThinnedPoints)
+    {
+        glEnableClientState(GL_VERTEX_ARRAY);
+
+        glPointSize(m_PC_size);
+        glColor4ubv(m_PC_color);
+        glVertexPointer(3, GL_DOUBLE, sizeof(Point3d), &m_thinnedPoints[0]);
+        glDrawArrays(GL_POINTS, 0, (unsigned int)m_thinnedPoints.size());
 
         glDisableClientState(GL_VERTEX_ARRAY);
     }
@@ -238,6 +251,12 @@ void GLwidget::nearestNeighborResultPointChanged(const Point3d& resultPoint)
 void GLwidget::drawingSmoothedPointsChanged(bool value)
 {
     m_drawSmoothedPoints = value;
+    this->update();
+}
+
+void GLwidget::drawingThinnedPointsChanged(bool value)
+{
+    m_drawThinnedPoints = value;
     this->update();
 }
 

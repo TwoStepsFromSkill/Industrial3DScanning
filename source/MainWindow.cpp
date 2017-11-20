@@ -17,6 +17,7 @@
 #include "NearestNeighborWidget.h"
 #include "SmoothingWidget.h"
 #include "ThinningWidget.h"
+#include "KDTree.h"
 
 using duration_micro = std::chrono::duration<double, std::micro>;
 using duration_milli = std::chrono::duration<double, std::milli>;
@@ -116,10 +117,13 @@ MainWindow::MainWindow()
 
     m_rangeWidget->activate();
 
-	// TODO: Smooting section
+	// Smooting section
 	connect(m_smoothingWidget, SIGNAL(applyPressed()), this, SLOT(applySmoothing()));
     connect(this, SIGNAL(drawingSmoothedPointsChange(bool)), m_glWidget, SLOT(drawingSmoothedPointsChanged(bool)));
 
+    // Thinning section
+    connect(m_thinningWidget, SIGNAL(applyPressed()), this, SLOT(applyThinning()));
+    connect(this, SIGNAL(drawingThinnedPointsChange(bool)), m_glWidget, SLOT(drawingThinnedPointsChanged(bool)));
 }
 
 void MainWindow::openFile()
@@ -325,6 +329,15 @@ void MainWindow::applySmoothing()
 	}
 }
 
+void MainWindow::applyThinning()
+{
+	if (m_kdTree)
+	{
+		computeAndVisualizeThinning();
+	}
+}
+
+
 void MainWindow::computeAndVisualizeSmoothing()
 {
 	double radius;
@@ -337,6 +350,22 @@ void MainWindow::computeAndVisualizeSmoothing()
 
     m_glWidget->setSmoothedPoints(smoothedPoints);
     emit drawingSmoothedPointsChange(true);
+}
+
+void MainWindow::computeAndVisualizeThinning()
+{
+    double radius;
+	m_thinningWidget->getRadius(&radius);
+
+    std::vector<Point3d> thinnedPoints;
+
+    auto startTime = std::chrono::system_clock::now();
+        homogeneousThinning(m_kdTree, m_kdTree, radius, thinnedPoints);
+    duration_milli elapsed = std::chrono::system_clock::now() - startTime;
+    std::cout << "Finished Thinning! Took [" << elapsed.count() / 1000.0 << "s]\n";
+
+    m_glWidget->setThinnedPoints(thinnedPoints);
+    emit drawingThinnedPointsChange(true);
 }
 
 /*
