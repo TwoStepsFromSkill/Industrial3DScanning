@@ -344,7 +344,7 @@ void MainWindow::computeAndVisualizeSmoothing()
 	m_smoothingWidget->getRadius(&radius);
 
     auto startTime = std::chrono::system_clock::now();
-        std::vector<Point3d> smoothedPoints = smoothPoints(m_points, m_kdTree, radius);
+        std::vector<Point3d> smoothedPoints = smoothPointsGaussian(m_points, m_kdTree, radius);
     duration_milli elapsed = std::chrono::system_clock::now() - startTime;
     std::cout << "Finished Smoothing! Took [" << elapsed.count() / 1000.0 << "s]\n";
 
@@ -394,7 +394,7 @@ void MainWindow::computeAndVisualizeThinning()
  * Für die Visualisierung des Ergebnisses gilt das gleiche wie oben.
  */
 
-std::vector<Point3d> MainWindow::smoothPoints(const std::vector<Point3d>& points, Node* rootNode, double radius)
+std::vector<Point3d> MainWindow::smoothPointsAverage(const std::vector<Point3d>& points, Node* rootNode, double radius)
 {
 	std::vector<Point3d> smoothedPoints;
     smoothedPoints.resize(points.size());
@@ -419,3 +419,30 @@ std::vector<Point3d> MainWindow::smoothPoints(const std::vector<Point3d>& points
 	return smoothedPoints;
 }
 
+std::vector<Point3d> MainWindow::smoothPointsGaussian(const std::vector<Point3d>& points, Node* rootNode, double radius)
+{
+	std::vector<Point3d> smoothedPoints;
+	smoothedPoints.resize(points.size());
+
+#pragma omp parallel for
+	for (int i = 0; i < points.size(); ++i)
+	{
+		const Point3d& point = points[i];
+
+		Point3d smoothedPointSum;
+		std::vector<Point3d> neighborPoints = queryRadius(rootNode, radius, point);
+		double sumWeights = 0;
+
+		for (std::size_t j = 0; j < neighborPoints.size(); ++j)
+		{
+			double distance = sqDistance3d(point, neighborPoints[j]);
+			double weight = std::exp((-distance) / radius);
+			smoothedPointSum += (neighborPoints[j] * weight);
+			sumWeights += weight;
+		}
+
+		smoothedPoints[i] = smoothedPointSum * (1/sumWeights);
+	}
+
+	return smoothedPoints;
+}
