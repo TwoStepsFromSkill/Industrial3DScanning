@@ -4,6 +4,8 @@
 #include <QSettings>
 #include <QVariant>
 #include <QFileInfo>
+#include <QEvent>
+#include <QKeyEvent>
 
 #include <cmath>
 
@@ -21,6 +23,8 @@ GLwidget::GLwidget(QWidget* parent)
     , m_rangeExtend()
     , m_drawRangeQueryBox(false)
     , m_drawRangeQueryResult(false)
+    , m_drawMainPointCloud(true)
+    , m_drawTemporary(false)
     , m_drawNearestQueryPoint(false)
     , m_drawNearestResultPoint(false)
     , m_drawSmoothedPoints(false)
@@ -58,7 +62,7 @@ void GLwidget::paintGL()
     drawBackground();
 
     //Draw pointclouds
-    if (!m_points.empty() && !(m_drawSmoothedPoints) && !(m_drawThinnedPoints))
+    if (!m_points.empty() && m_drawMainPointCloud)
     { /* Drawing Points with VertexArrays */
         glEnableClientState(GL_VERTEX_ARRAY);
 
@@ -142,10 +146,10 @@ void GLwidget::paintGL()
     {
         glEnableClientState(GL_VERTEX_ARRAY);
 
-        glPointSize(m_PC_size);
-        glColor4ubv(m_PC_color);
+        glPointSize(m_SM_size);
+        glColor4ubv(m_SM_color);
         glVertexPointer(3, GL_DOUBLE, sizeof(Point3d), &m_smoothedPoints[0]);
-        glDrawArrays(GL_POINTS, 0, (unsigned int)m_smoothedPoints.size());
+        glDrawArrays(GL_POINTS, 0, (unsigned int) m_smoothedPoints.size());
 
         glDisableClientState(GL_VERTEX_ARRAY);
     }
@@ -154,12 +158,34 @@ void GLwidget::paintGL()
     {
         glEnableClientState(GL_VERTEX_ARRAY);
 
-        glPointSize(m_PC_size);
-        glColor4ubv(m_PC_color);
+        glPointSize(m_TH_size);
+        glColor4ubv(m_TH_color);
         glVertexPointer(3, GL_DOUBLE, sizeof(Point3d), &m_thinnedPoints[0]);
-        glDrawArrays(GL_POINTS, 0, (unsigned int)m_thinnedPoints.size());
+        glDrawArrays(GL_POINTS, 0, (unsigned int) m_thinnedPoints.size());
 
         glDisableClientState(GL_VERTEX_ARRAY);
+    }
+
+    if (m_drawTemporary)
+    {
+        glPointSize(m_TMPR_size);
+        glColor4ubv(m_TMPS_color);
+
+        glBegin(GL_POINTS);
+            glVertex3dv(&m_tempPoint[0]);
+        glEnd();
+
+        if (!m_tempRadiusPoints.empty())
+        {
+            glEnableClientState(GL_VERTEX_ARRAY);
+
+            glPointSize(m_TMPR_size);
+            glColor4ubv(m_TMPR_color);
+            glVertexPointer(3, GL_DOUBLE, sizeof(Point3d), &m_tempRadiusPoints[0]);
+            glDrawArrays(GL_POINTS, 0, (unsigned int) m_tempRadiusPoints.size());
+
+            glDisableClientState(GL_VERTEX_ARRAY);
+        }
     }
 
     //draw coordinate frame
@@ -168,9 +194,37 @@ void GLwidget::paintGL()
     update();
 }
 
+bool GLwidget::eventFilter(QObject *obj, QEvent *event)
+{
+    if (event->type() == QEvent::KeyPress)
+    {
+        QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
+
+        if (keyEvent->key() == Qt::Key_H)
+        {
+            m_drawMainPointCloud = !m_drawMainPointCloud;
+            this->update();
+        }
+    }
+
+    return QObject::eventFilter(obj, event);
+}
+
 void GLwidget::reloadDrawSettings()
 {
     loadDrawSettings();
+    this->update();
+}
+
+void GLwidget::drawingMainPointCloudChange(bool value)
+{
+    m_drawMainPointCloud = value;
+    this->update();
+}
+
+void GLwidget::drawingTemporaryChange(bool value)
+{
+    m_drawTemporary = value;
     this->update();
 }
 
@@ -270,6 +324,30 @@ void GLwidget::loadDrawSettings()
 
     QSettings set(QString("drawSettings.ini"), QSettings::IniFormat);
 
+    m_SM_color[0] = set.value("SM_color_R", 255).value<unsigned char>();
+    m_SM_color[1] = set.value("SM_color_G", 0).value<unsigned char>();
+    m_SM_color[2] = set.value("SM_color_B", 0).value<unsigned char>();
+    m_SM_color[3] = set.value("SM_color_A", 255).value<unsigned char>();
+    m_SM_size = set.value("SM_size", 2).toInt();
+
+    m_TH_color[0] = set.value("TH_color_R", 0).value<unsigned char>();
+    m_TH_color[1] = set.value("TH_color_G", 255).value<unsigned char>();
+    m_TH_color[2] = set.value("TH_color_B", 0).value<unsigned char>();
+    m_TH_color[3] = set.value("TH_color_A", 255).value<unsigned char>();
+    m_TH_size = set.value("TH_size", 2).toInt();
+
+    m_TMPS_color[0] = set.value("TMPS_color_R", 255).value<unsigned char>();
+    m_TMPS_color[1] = set.value("TMPS_color_G", 255).value<unsigned char>();
+    m_TMPS_color[2] = set.value("TMPS_color_B", 255).value<unsigned char>();
+    m_TMPS_color[3] = set.value("TMPS_color_A", 255).value<unsigned char>();
+    m_TMPS_size = set.value("TMPS_size", 4).toInt();
+
+    m_TMPR_color[0] = set.value("TMPR_color_R", 0).value<unsigned char>();
+    m_TMPR_color[1] = set.value("TMPR_color_G", 0).value<unsigned char>();
+    m_TMPR_color[2] = set.value("TMPR_color_B", 0).value<unsigned char>();
+    m_TMPR_color[3] = set.value("TMPR_color_A", 255).value<unsigned char>();
+    m_TMPR_size = set.value("TMPR_size", 4).toInt();
+
     m_PC_color[0] = set.value("PC_color_R", 255).value<unsigned char>();
     m_PC_color[1] = set.value("PC_color_G", 141).value<unsigned char>();
     m_PC_color[2] = set.value("PC_color_B", 42).value<unsigned char>();
@@ -364,8 +442,8 @@ void GLwidget::mouseMoveEvent(QMouseEvent * e)
     if (e->buttons() != Qt::LeftButton){ return; }
 
     //No action, if mouse position outside the window
-    if ((*e).x()<0 || (*e).x() >= width() ){ return; }
-    if ((*e).y()<0 || (*e).y() >= height()){ return; }
+    if ((*e).x() < 0 || (*e).x() >= width()){ return; }
+    if ((*e).y() < 0 || (*e).y() >= height()){ return; }
 
     const QPoint& mouseCurrentPos(e->pos());
 

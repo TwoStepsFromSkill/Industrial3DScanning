@@ -47,6 +47,8 @@ private:
 signals:
     void reloadDrawSettings();
 
+    void drawingMainPointCloudChanged(bool);
+    void drawingTemporaryChanged(bool);
     void drawingRangeQueryResultChanged(bool);
     void rangeQueryCenterChange(double, double, double);
     void rangeQueryExtendChange(double, double, double);
@@ -100,6 +102,8 @@ private slots:
     // Thinning
 	void applyThinning();
 
+    void smoothTmpPointChanged(int);
+    void thinTmpPointChanged(int);
 };
 
 #endif

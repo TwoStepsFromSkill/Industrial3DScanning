@@ -33,12 +33,21 @@ public:
     void setSmoothedPoints(const std::vector<Point3d>& smoothedPoints) { m_smoothedPoints = smoothedPoints; }
     void setThinnedPoints(const std::vector<Point3d>& thinnedPoints) { m_thinnedPoints = thinnedPoints; }
 
+    void setTempPoint(const Point3d& p) { m_tempPoint = p; }
+    void setTempRadiusPoints(const std::vector<Point3d>& pts) { m_tempRadiusPoints = pts; }
+
     //return camera
     GLcamera& camera(){return m_camera;}
+
+protected:
+    bool eventFilter(QObject *obj, QEvent *event);
 
 public slots:
     // Visualization
     void reloadDrawSettings();
+
+    void drawingMainPointCloudChange(bool value);
+    void drawingTemporaryChange(bool value);
 
     // Range query
     void drawingRangeQueryBoxChange(bool value);
@@ -80,6 +89,9 @@ private:
     std::vector<Point3d> m_smoothedPoints;
     std::vector<Point3d> m_thinnedPoints;
 
+    Point3d m_tempPoint;
+    std::vector<Point3d> m_tempRadiusPoints;
+
     QPoint               m_mouseLastPos;  //last mouse position clicked
 
     GLcamera  m_camera;         //virtual camera
@@ -103,6 +115,11 @@ private:
     double m_btl[3];
     double m_btr[3];
 
+    // Point cloud
+    bool m_drawMainPointCloud;
+
+    bool m_drawTemporary;
+
     // Nearest Neighbor
     Point3d m_nearestQueryPoint;
     Point3d m_nearestResultPoint;
@@ -111,13 +128,24 @@ private:
 
     // Smoothing
     bool m_drawSmoothedPoints;
+    unsigned char m_SM_color[4];
+    int m_SM_size;
 
     // Thinning
     bool m_drawThinnedPoints;
+    unsigned char m_TH_color[4];
+    int m_TH_size;
 
     // Colors and draw settings
     unsigned char m_PC_color[4];
     int m_PC_size;
+
+    // Temp
+    unsigned char m_TMPS_color[4];
+    int m_TMPS_size;
+
+    unsigned char m_TMPR_color[4];
+    int m_TMPR_size;
 
     unsigned char m_RQ_box_color[4];
     double m_RQ_box_width;

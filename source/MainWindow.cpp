@@ -11,6 +11,7 @@
 #include <limits>
 #include <chrono>
 #include <iostream>
+#include <cmath>
 
 #include "BaseTabWidget.h"
 #include "RangeQueryWidget.h"
@@ -32,6 +33,8 @@ MainWindow::MainWindow()
 
     m_glWidget = new GLwidget();
     m_glWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    this->installEventFilter(m_glWidget);
+
     m_mainLayout->addWidget(m_glWidget);
 
     m_tabWidget = new QTabWidget(this);
@@ -120,10 +123,15 @@ MainWindow::MainWindow()
 	// Smooting section
 	connect(m_smoothingWidget, SIGNAL(applyPressed()), this, SLOT(applySmoothing()));
     connect(this, SIGNAL(drawingSmoothedPointsChange(bool)), m_glWidget, SLOT(drawingSmoothedPointsChanged(bool)));
+    connect(m_smoothingWidget, SIGNAL(tempPointChanged(int)), this, SLOT(smoothTmpPointChanged(int)));
 
     // Thinning section
     connect(m_thinningWidget, SIGNAL(applyPressed()), this, SLOT(applyThinning()));
     connect(this, SIGNAL(drawingThinnedPointsChange(bool)), m_glWidget, SLOT(drawingThinnedPointsChanged(bool)));
+    connect(m_thinningWidget, SIGNAL(tempPointChanged(int)), this, SLOT(thinTmpPointChanged(int)));
+
+    connect(this, SIGNAL(drawingMainPointCloudChanged(bool)), m_glWidget, SLOT(drawingMainPointCloudChange(bool)));
+    connect(this, SIGNAL(drawingTemporaryChanged(bool)), m_glWidget, SLOT(drawingTemporaryChange(bool)));
 }
 
 void MainWindow::openFile()
@@ -137,7 +145,7 @@ void MainWindow::openFile()
     auto startTime = std::chrono::system_clock::now();
         loadFileXYZ(filenames.front().toLocal8Bit(), m_points);
     duration_milli elapsed = std::chrono::system_clock::now() - startTime;
-    std::cout << "Loaded " << m_points.size() << " poinst! Took [" << elapsed.count() << "ms]\n";
+    std::cerr << "Loaded " << m_points.size() << " poinst! Took [" << elapsed.count() << "ms]\n";
 
     if (m_kdTree)
     {
@@ -147,7 +155,7 @@ void MainWindow::openFile()
     startTime = std::chrono::system_clock::now();
         m_kdTree = KDTree::buildKDTree(m_points.data(), m_points.data() + m_points.size(), 0);
     elapsed = std::chrono::system_clock::now() - startTime;
-    std::cout << "KDTree created! Took [" << elapsed.count() << "ms]\n";
+    std::cerr << "KDTree created! Took [" << elapsed.count() << "ms]\n";
 
     m_glWidget->setPoints(m_points);
     m_tabWidget->setEnabled(true);
@@ -178,6 +186,10 @@ void MainWindow::tabSwitched(int index)
         else
             static_cast<BaseTabWidget*>(m_tabWidget->widget(i))->activate();
     }
+
+    emit drawingTemporaryChanged(false);
+    emit drawingSmoothedPointsChange(false);
+    emit drawingThinnedPointsChange(false);
 }
 
 void MainWindow::loadFileXYZ(const char* filename, std::vector<Point3d>& points)
@@ -187,7 +199,7 @@ void MainWindow::loadFileXYZ(const char* filename, std::vector<Point3d>& points)
 
     if (!file)
     {
-        std::cout << "file " << filename << " could not be opened!" << std::endl;
+        std::cerr << "file " << filename << " could not be opened!" << std::endl;
         return;
     }
 
@@ -224,6 +236,10 @@ void MainWindow::updateSidebarWidgetData()
 
     m_rangeWidget->resetValueRange(xMin, xMax, yMin, yMax, zMin, zMax);
     m_nearestWidget->resetValueRange(xMin, xMax, yMin, yMax, zMin, zMax);
+    m_smoothingWidget->resetValueRange(xMin, xMax, yMin, yMax, zMin, zMax);
+    m_smoothingWidget->setNumberOfPoints(m_points.size());
+    m_thinningWidget->resetValueRange(xMin, xMax, yMin, yMax, zMin, zMax);
+    m_thinningWidget->setNumberOfPoints(m_points.size());
 }
 
 void MainWindow::rangeQueryCenterChanged(double x, double y, double z)
@@ -272,7 +288,7 @@ void MainWindow::computeAndVisualizeRangeQuery()
     auto startTime = std::chrono::system_clock::now();
     auto points = queryRange(m_kdTree, range);
     duration_micro elapsed = std::chrono::system_clock::now() - startTime;
-    std::cout << "Queried KDTree! Found " << points.size() << " poinst! Took [" << elapsed.count() << "µs]\n";
+    std::cerr << "Queried KDTree! Found " << points.size() << " poinst! Took [" << elapsed.count() << "µs]\n";
 
     emit rangeQueryResultChange(points);
     emit drawingRangeQueryResultChanged(true);
@@ -312,10 +328,9 @@ void MainWindow::computeAndVisualizeNearestNeighbor()
     m_nearestWidget->getQueryPoint(xyz);
 
     auto startTime = std::chrono::system_clock::now();
-	//Point3d res = findNearestPoint_Elke(m_kdTree, Point3d(xyz[0], xyz[1], xyz[2]));
-    Point3d res = nearestNeighbor_daniel(m_kdTree, Point3d(xyz[0], xyz[1], xyz[2]));
+        Point3d res = nearestNeighbor_daniel(m_kdTree, Point3d(xyz[0], xyz[1], xyz[2]));
     duration_micro elapsed = std::chrono::system_clock::now() - startTime;
-    std::cout << "Found NearestNeighbor! Took [" << elapsed.count() << "µs]\n";
+    std::cerr << "Found NearestNeighbor! Took [" << elapsed.count() << "µs]\n";
 
     emit nearestNeighborResultPointChange(res);
     emit drawingNearestNeighborResultChanged(true);
@@ -337,18 +352,54 @@ void MainWindow::applyThinning()
 	}
 }
 
+void MainWindow::smoothTmpPointChanged(int i)
+{
+    const Point3d& pt = m_points[i];
+    double radius = 0.0;
+    m_smoothingWidget->getRadius(&radius);
+
+    std::vector<Point3d> neighborPoints = queryRadius(m_kdTree, radius, pt);
+
+    m_glWidget->setTempPoint(pt);
+    m_glWidget->setTempRadiusPoints(neighborPoints);
+    emit drawingTemporaryChanged(true);
+}
+
+void MainWindow::thinTmpPointChanged(int i)
+{
+    const Point3d& pt = m_points[i];
+    double radius = 0.0;
+    m_thinningWidget->getRadius(&radius);
+
+    std::vector<Point3d> neighborPoints = queryRadius(m_kdTree, radius, pt);
+
+    m_glWidget->setTempPoint(pt);
+    m_glWidget->setTempRadiusPoints(neighborPoints);
+    emit drawingTemporaryChanged(true);
+}
 
 void MainWindow::computeAndVisualizeSmoothing()
 {
 	double radius;
 	m_smoothingWidget->getRadius(&radius);
 
+    std::vector<Point3d> smoothedPoints;
+
     auto startTime = std::chrono::system_clock::now();
-        std::vector<Point3d> smoothedPoints = smoothPointsGaussian(m_points, m_kdTree, radius);
+    if (m_smoothingWidget->useGaussSmoothing())
+    {
+        smoothedPoints = smoothPointsGaussian(m_points, m_kdTree, radius);
+    }
+    else
+    {
+        smoothedPoints = smoothPointsAverage(m_points, m_kdTree, radius);
+    }
     duration_milli elapsed = std::chrono::system_clock::now() - startTime;
-    std::cout << "Finished Smoothing! Took [" << elapsed.count() / 1000.0 << "s]\n";
+    std::cerr << "Finished Smoothing! Took [" << elapsed.count() / 1000.0 << "s]\n";
 
     m_glWidget->setSmoothedPoints(smoothedPoints);
+    emit drawingTemporaryChanged(false);
+    emit drawingMainPointCloudChanged(false);
     emit drawingSmoothedPointsChange(true);
 }
 
@@ -357,44 +408,28 @@ void MainWindow::computeAndVisualizeThinning()
     double radius;
 	m_thinningWidget->getRadius(&radius);
 
+#pragma omp parallel for
+    for (int i = 0; i < m_points.size(); ++i)
+    {
+        m_points[i].flag_ignore = false;
+    }
+
     std::vector<Point3d> thinnedPoints;
 
+    std::cerr << "Started thinning...\n";
     auto startTime = std::chrono::system_clock::now();
         homogeneousThinning(m_kdTree, m_kdTree, radius, thinnedPoints);
     duration_milli elapsed = std::chrono::system_clock::now() - startTime;
-    std::cout << "Finished Thinning! Took [" << elapsed.count() / 1000.0 << "s]\n";
+    std::cerr << "Finished Thinning! Took [" << elapsed.count() / 1000.0 << "s]\n";
 
     m_glWidget->setThinnedPoints(thinnedPoints);
+    emit drawingTemporaryChanged(false);
+    emit drawingMainPointCloudChanged(false);
     emit drawingThinnedPointsChange(true);
 }
 
-/*
- * Smoothing
- * =========
- * std::vector<Point3d> smoothPoints(const std::vector<Point3d>& points, Node* rootNode, double radius);
- *  - Gibt einen neuen Vektor mit den geglätteten Punkten zurück
- *  - Bekommt die alten (originalen) Punkte
- *  - Bekommt den Baum für die Nachbarschaftsanfragen
- *  - Bekommt einen Nachbarschaftsradius
- *
- * Die Punkte die dann rauskommen können wir separat abspeichern. Dann kann man in der Visualisierung
- * leicht zwischen Originalpunktewolke und dem Glättungsergebnis hin und her schalten. Wenn einem
- * das Ergebnis nicht gefällt, kann man dann beispielsweise den Radius erhöhen oder ähnliches und das
- * ganze nochmal ausführen.
- *
- *
- * Thinning
- * ========
- * std::vector<Point3d> thinPoints(const std::vector<Point3d>& points, Node* rootNode, double minDist);
- *  - Gibt einen neuen Vektor mit den reduzierten Punkten zurück
- *  - Bekommt die alten (originalen) Punkte
- *  - Bekommt den Baum für die Nachbarschaftsanfragen
- *  - Bekommt einen minimalen Abstand der zwischen den Ergebnispunkten vorliegen muss
- *
- * Für die Visualisierung des Ergebnisses gilt das gleiche wie oben.
- */
-
-std::vector<Point3d> MainWindow::smoothPointsAverage(const std::vector<Point3d>& points, Node* rootNode, double radius)
+std::vector<Point3d> MainWindow::smoothPointsAverage(const std::vector<Point3d>& points,
+                                                     Node* rootNode, double radius)
 {
 	std::vector<Point3d> smoothedPoints;
     smoothedPoints.resize(points.size());
@@ -419,7 +454,8 @@ std::vector<Point3d> MainWindow::smoothPointsAverage(const std::vector<Point3d>&
 	return smoothedPoints;
 }
 
-std::vector<Point3d> MainWindow::smoothPointsGaussian(const std::vector<Point3d>& points, Node* rootNode, double radius)
+std::vector<Point3d> MainWindow::smoothPointsGaussian(const std::vector<Point3d>& points,
+                                                      Node* rootNode, double radius)
 {
 	std::vector<Point3d> smoothedPoints;
 	smoothedPoints.resize(points.size());
