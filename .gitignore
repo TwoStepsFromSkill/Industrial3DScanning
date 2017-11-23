@@ -39,4 +39,3 @@ build*
 *.user
 .directory
 *.kdev4
-html/
