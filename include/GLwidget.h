@@ -26,6 +26,7 @@ public:
 
     //points to draw
     void setPoints    (std::vector<Point3d>& points)   { m_points = points; updateScene(); }
+    void setPointColors (std::vector<unsigned char>& colors) { m_pointColors = colors; }
 
     //access to data
     std::vector<Point3d>& points() { return m_points; }
@@ -35,6 +36,9 @@ public:
 
     void setTempPoint(const Point3d& p) { m_tempPoint = p; }
     void setTempRadiusPoints(const std::vector<Point3d>& pts) { m_tempRadiusPoints = pts; }
+
+    void drawingMainPointWithColorArray(bool val)
+    { m_drawMainPointCloudWithColorArray = val; this->update(); }
 
     //return camera
     GLcamera& camera(){return m_camera;}
@@ -72,9 +76,9 @@ private:
     void loadDrawSettings();
     void writeSettings();
 
-    void  mousePressEvent(QMouseEvent * e);  ///<
-    void  mouseMoveEvent (QMouseEvent * e);  ///<
-    void  wheelEvent     (QWheelEvent * e);  ///<
+    void  mousePressEvent(QMouseEvent * e);
+    void  mouseMoveEvent (QMouseEvent * e);
+    void  wheelEvent     (QWheelEvent * e);
 
     void drawBox();             ///< draws a unit box
     void drawCircle();          ///< draws a unit circle
@@ -85,6 +89,7 @@ private:
     void updateRangeQueryBoxData();
 
     std::vector<Point3d> m_points;    //point data
+    std::vector<unsigned char> m_pointColors;
     std::vector<Point3d> m_pointsInRange;
     std::vector<Point3d> m_smoothedPoints;
     std::vector<Point3d> m_thinnedPoints;
@@ -117,6 +122,7 @@ private:
 
     // Point cloud
     bool m_drawMainPointCloud;
+    bool m_drawMainPointCloudWithColorArray;
 
     bool m_drawTemporary;
 

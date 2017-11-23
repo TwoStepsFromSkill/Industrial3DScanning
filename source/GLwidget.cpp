@@ -24,6 +24,7 @@ GLwidget::GLwidget(QWidget* parent)
     , m_drawRangeQueryBox(false)
     , m_drawRangeQueryResult(false)
     , m_drawMainPointCloud(true)
+    , m_drawMainPointCloudWithColorArray(false)
     , m_drawTemporary(false)
     , m_drawNearestQueryPoint(false)
     , m_drawNearestResultPoint(false)
@@ -63,13 +64,26 @@ void GLwidget::paintGL()
 
     //Draw pointclouds
     if (!m_points.empty() && m_drawMainPointCloud)
-    { /* Drawing Points with VertexArrays */
+    {
         glEnableClientState(GL_VERTEX_ARRAY);
 
         glPointSize(m_PC_size);
-        glColor4ubv(m_PC_color);
-        glVertexPointer(3, GL_DOUBLE, sizeof(Point3d), &m_points[0]);
-        glDrawArrays(GL_POINTS, 0, (unsigned int)m_points.size());
+
+        if (m_drawMainPointCloudWithColorArray)
+        {
+            glEnableClientState(GL_COLOR_ARRAY);
+            glVertexPointer(3, GL_DOUBLE, sizeof(Point3d), &m_points[0]);
+            glColorPointer(3, GL_UNSIGNED_BYTE, 3*sizeof(unsigned char), &m_pointColors[0]);
+            glDrawArrays(GL_POINTS, 0, (unsigned int) m_points.size());
+
+            glDisableClientState(GL_COLOR_ARRAY);
+        }
+        else
+        {
+            glColor4ubv(m_PC_color);
+            glVertexPointer(3, GL_DOUBLE, sizeof(Point3d), &m_points[0]);
+            glDrawArrays(GL_POINTS, 0, (unsigned int) m_points.size());
+        }
 
         glDisableClientState(GL_VERTEX_ARRAY);
     }
