@@ -3,12 +3,22 @@
 
 #include <cstdlib>
 
+/**
+ * @brief Point in 3-dimensional euclidean space.
+ */
 struct Point3d
 {
+    /**
+     * @brief Default constructor. Initializes to 0.
+     */
     Point3d()
         : data{0.0, 0.0, 0.0}, flag_ignore{false}
     {}
 
+    /**
+     * @brief Constructor. Initializes with given x,y,z.
+     * @param x,y,z Coordinates of point.
+     */
     Point3d(double _x, double _y, double _z)
         : data{_x, _y, _z}, flag_ignore{false}
     {}
