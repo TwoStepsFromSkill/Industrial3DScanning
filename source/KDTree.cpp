@@ -21,7 +21,14 @@ Node::~Node()
 }
 
 Point3d* givenPoint = new Point3d(0.0010,0.0347,-0.0236);
-
+/**
+	@brief function which creats an 3DTree 
+	@details on the left side of the tree are the points with small x,y,z values
+	@param rangeBegin is a pointer which is pointing on an Point3d 
+	@param rangeEnd is a pointer which is pointing on the adress behind the last Point3d
+	@param depth is the depth of the tree with which the actual dimension can be find out
+	@return the root node of the 3DTree
+*/
 Node* KDTree::buildKDTree(Point3d* rangeBegin, Point3d* rangeEnd, unsigned int depth)
 {
 	//compute how many points there are in the given range
@@ -73,7 +80,9 @@ Node* KDTree::buildKDTree(Point3d* rangeBegin, Point3d* rangeEnd, unsigned int d
 
 	return childNode;
 }
-
+/**
+	@brief sorts two Point3d by their x value
+*/
 bool KDTree::sortByXvalue(const Point3d& p1, const Point3d& p2)
 {
 	if (p1[0] < p2[0])
@@ -81,7 +90,9 @@ bool KDTree::sortByXvalue(const Point3d& p1, const Point3d& p2)
 	else
 		return false;
 }
-
+/**
+@brief sorts two Point3d by their y value
+*/
 bool KDTree::sortByYvalue(const Point3d& p1, const Point3d& p2)
 {
 	if (p1[1] < p2[1])
@@ -89,7 +100,9 @@ bool KDTree::sortByYvalue(const Point3d& p1, const Point3d& p2)
 	else
 		return false;
 }
-
+/**
+@brief sorts two Point3d by their z value
+*/
 bool KDTree::sortByZvalue(const Point3d& p1, const Point3d& p2)
 {
 	if (p1[2] < p2[2])
@@ -141,7 +154,13 @@ void queryRange_impl(Node* tree, const double minMax[6], unsigned int depth, std
             queryRange_impl(tree->rightChild, minMax, dimension + 1, out);
     }
 }
-
+/**
+	@brief function which calls the recursiv function that calculate all neighboorpoints of the centerPoint
+	@param tree is a pointer on the root node of a 3DTree 
+	@param radius is the radius in which the function search spherical for the neighboorpoints of the centerPoint
+	@param centerPoint is the Point3d for which the neighboorpoints should be found
+	@return a vector of Point3d which contains all neighboorpoints
+*/
 std::vector<Point3d> queryRadius(Node* tree, const double radius, Point3d centerPoint)
 {
 	std::vector<Point3d> result;
@@ -149,6 +168,7 @@ std::vector<Point3d> queryRadius(Node* tree, const double radius, Point3d center
 
 	return result;
 }
+
 void queryRadius_impl(Node* tree, const double radius, unsigned int depth,
 	std::vector<Point3d>& out, Point3d centerPoint)
 {
@@ -242,6 +262,7 @@ void nearestNeighbor_daniel_impl(Node* tree, const double* queryPoint, double* m
 		}
 	}
 }
+/*TODO Elke*/
 Point3d findNearestPoint_Elke(Node* tree, const Point3d& queryPoint)
 {
 	double minDist = std::numeric_limits<double>::max();
@@ -256,7 +277,7 @@ Point3d findNearestPoint_Elke(Node* tree, const Point3d& queryPoint)
 
 	return minPoint;
 }
-
+/*TODO Elke*/
 void findNearestPointRecursiveley_Elke(Node* tree, double* currDist, unsigned int depth, Point3d* currentPoint)
 {
 	// Stepped to deep
@@ -296,7 +317,7 @@ void findNearestPointRecursiveley_Elke(Node* tree, double* currDist, unsigned in
 		}
 	}
 }
-
+/*TODO Elke*/
 void insertGivenPoint(Node* tree, double* currDist, unsigned int depth, Point3d* currentPoint)
 {
 	if (!tree->leftChild && !tree->rightChild)

@@ -454,6 +454,14 @@ std::vector<Point3d> MainWindow::smoothPointsAverage(const std::vector<Point3d>&
 	return smoothedPoints;
 }
 
+/** 
+	@brief smoothPointsGaussian is a function that smoothes the points with an gaussian kernel 
+	in a spherical neighborhood 
+	@param points is a vector which contains all given points
+	@param rootNode is a 3dTree which contains all given points in a sorted order
+	@param radius defines the range for the spherical neighboorhood search
+	@return is a vector which contains all smoothed points 
+*/
 std::vector<Point3d> MainWindow::smoothPointsGaussian(const std::vector<Point3d>& points,
                                                       Node* rootNode, double radius)
 {
@@ -476,8 +484,8 @@ std::vector<Point3d> MainWindow::smoothPointsGaussian(const std::vector<Point3d>
 			smoothedPointSum += (neighborPoints[j] * weight);
 			sumWeights += weight;
 		}
-
-		smoothedPoints[i] = smoothedPointSum * (1/sumWeights);
+		if(sumWeights != 0)
+			smoothedPoints[i] = smoothedPointSum * (1/sumWeights);
 	}
 
 	return smoothedPoints;
