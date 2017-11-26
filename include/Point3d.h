@@ -23,35 +23,99 @@ struct Point3d
         : data{_x, _y, _z}, flag_ignore{false}
     {}
 
-    //custom operators that enable vector algebra
-    //these operator are marked CONST because they don't change member variables of this class
+    /**
+     * @brief Vector addition.
+     * @param[in] p2 Vector to add the the one stored inside the struct.
+     * @return Returns a new vector that is the addition of the vector stored
+     *          inside the struct and p2.
+     */
     Point3d operator + (const Point3d& p2) const; // + operation of two points (pt3 = pt1 + pt2)
+    /**
+     * @brief Vector subtraction.
+     * @param[in] p2 Vector to subtractfrom the one stored inside the struct.
+     * @return Returns a new vector that is the subtraction of the vector stored
+     *          inside the struct and p2.
+     */
     Point3d operator - (const Point3d& p2) const; // - operation of two points (pt3 = pt1 - pt2)
+    /**
+     * @brief Vector scalar multiplication.
+     * @param[in] scalar A scalar value.
+     * @returns Returns a scaled version of the vector stored inside the struct.
+     */
     Point3d operator * (double scalar) const;     // multiplication with a scalar value(pt2 = pt1 * 0.5)
 
-    //assignments with operator
-    //the operators can not be marked CONST because they do change the input
+    /**
+     * @brief Add vector onto the current one.
+     * @param[in] p2 Vector to add the the one stored inside the struct.
+     * @return Returns a reference to itself.
+     */
     Point3d& operator += (const Point3d& p2); // += operation of two points (pt1+= pt2  -> pt1 = pt1 + pt2)
+    /**
+     * @brief Subtract vector from the current one.
+     * @param[in] p2 Vector to subtract from the one stored inside the struct.
+     * @return Returns a reference to itself.
+     */
     Point3d& operator -= (const Point3d& p2); // += operation of two points (pt1-= pt2  -> pt1 = pt1 - pt2)
+    /**
+     * @brief Multiply current vector with a scalar.
+     * @param[in] scalar A scalar value.
+     * @returns Returns a reference to itself.
+     */
     Point3d& operator *= (double scalar);     // *= multiplication with a scalar (pt1*= s  -> pt1 = pt1 * s)
 
+    /**
+     * @brief Element access.
+     * @param[in] index Index of the coordinate.
+     * @note This method does not validate input!
+     */
     double& operator [] (std::size_t index);
+    /**
+     * @copydoc Point3d::operator[]
+     */
     const double& operator [] (std::size_t index) const;
 
+    /**
+     * @brief Compare vector to another.
+     * @return Returns true iff all elements are equal.
+     */
     bool operator == (const Point3d& p2);	// == comparison of two points (p1 == p2 -> true)
+    /**
+     * @brief Check if vectors are inequal.
+     */
     bool operator != (const Point3d& p2);	// != comparison of two points (p1 != p2 -> true)
 
     double data[3];
     bool flag_ignore;
 };
 
-double  sqr(double value);                                  ///< returns the square of a value
-double  vectorLength(const Point3d& v);                     ///< returns the length of a vector
-double  dotProduct  (const Point3d& v1, const Point3d& v2); ///< returns the dot product of two 3d vectors
-Point3d crossProduct(const Point3d& v1, const Point3d& v2); ///< returns the cross product of two 3d vectors
-void    normalizeVector(Point3d& v);                        ///< normalizes a 3d vector
-double  sqDistance3d(const Point3d& v1, const Point3d& v2); ///< returns the squared Euclidean distance between two 3d points/vectors
-double  distance3d  (const Point3d& v1, const Point3d& v2); ///< returns the Euclidean distance between two 3d points/vectors
-
+/**
+ * @brief Square a value.
+ */
+double  sqr(double value);
+/**
+ * @brief Computes length of a given vector.
+ */
+double  vectorLength(const Point3d& v);
+/**
+ * @brief Computes the inner product between two vectors.
+ */
+double  dotProduct  (const Point3d& v1, const Point3d& v2);
+/**
+ * @brief Computes the cross product between two vectors.
+ */
+Point3d crossProduct(const Point3d& v1, const Point3d& v2);
+/**
+ * @brief Normalizes a given vector inplace.
+ * @post vectorLength(v) == 1.0
+ */
+void    normalizeVector(Point3d& v);
+/**
+ * @brief Computes squared distance between two points.
+ */
+double  sqDistance3d(const Point3d& v1, const Point3d& v2);
+/**
+ * @brief Computes distance between two points.
+ */
+double  distance3d  (const Point3d& v1, const Point3d& v2);
 
 #endif //end the include guard MY_POINT_H
