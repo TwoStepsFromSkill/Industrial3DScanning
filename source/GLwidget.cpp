@@ -25,6 +25,7 @@ GLwidget::GLwidget(QWidget* parent)
     , m_drawRangeQueryResult(false)
     , m_drawMainPointCloud(true)
     , m_drawMainPointCloudWithColorArray(false)
+    , m_drawSmoothedState(0)
     , m_drawTemporary(false)
     , m_drawNearestQueryPoint(false)
     , m_drawNearestResultPoint(false)
@@ -216,7 +217,34 @@ bool GLwidget::eventFilter(QObject *obj, QEvent *event)
 
         if (keyEvent->key() == Qt::Key_H)
         {
-            m_drawMainPointCloud = !m_drawMainPointCloud;
+            if (m_drawSmoothedPoints)
+            {
+                m_drawSmoothedState = (m_drawSmoothedState + 1) % 3;
+
+                switch (m_drawSmoothedState)
+                {
+                    case 0:
+                        m_drawMainPointCloud = true;
+                        m_drawMainPointCloudWithColorArray = false;
+                        m_drawSmoothedPoints = false;
+                        break;
+                    case 1:
+                        m_drawMainPointCloud = true;
+                        m_drawMainPointCloudWithColorArray = false;
+                        m_drawSmoothedPoints = true;
+                        break;
+                    case 2:
+                        m_drawMainPointCloud = false;
+                        m_drawMainPointCloudWithColorArray = true;
+                        m_drawSmoothedPoints = false;
+                        break;
+                }
+            }
+            else
+            {
+                m_drawMainPointCloud = !m_drawMainPointCloud;
+            }
+
             this->update();
         }
     }

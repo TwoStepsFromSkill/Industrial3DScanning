@@ -12,6 +12,7 @@
 #include <chrono>
 #include <iostream>
 #include <cmath>
+#include <algorithm>
 
 #include "BaseTabWidget.h"
 #include "RangeQueryWidget.h"
@@ -397,7 +398,32 @@ void MainWindow::computeAndVisualizeSmoothing()
     duration_milli elapsed = std::chrono::system_clock::now() - startTime;
     std::cerr << "Finished Smoothing! Took [" << elapsed.count() / 1000.0 << "s]\n";
 
+    // Color adjustment
+    std::vector<unsigned char> colors(3*m_points.size(), 0);
+    std::vector<double> distances(m_points.size());
+
+#pragma omp parallel for
+    for (int i = 0; i < m_points.size(); ++i)
+    {
+        distances[i] = sqDistance3d(m_points[i], smoothedPoints[i]);
+    }
+
+    auto minmax = std::minmax_element(distances.begin(), distances.end());
+    double min = *minmax.first;
+    double max = *minmax.second;
+
+#pragma omp parallel for
+    for (int i = 0; i < distances.size(); ++i)
+    {
+        unsigned char factor = ((distances[i] - min) / (max - min)) * 255;
+        colors[i*3] = factor;
+        colors[i*3 + 1] = factor;
+        colors[i*3 + 2] = factor;
+    }
+
     m_glWidget->setSmoothedPoints(smoothedPoints);
+    m_glWidget->setPointColors(colors);
+
     emit drawingTemporaryChanged(false);
     emit drawingMainPointCloudChanged(false);
     emit drawingSmoothedPointsChange(true);
@@ -454,13 +480,13 @@ std::vector<Point3d> MainWindow::smoothPointsAverage(const std::vector<Point3d>&
 	return smoothedPoints;
 }
 
-/** 
-	@brief smoothPointsGaussian is a function that smoothes the points with an gaussian kernel 
-	in a spherical neighborhood 
+/**
+	@brief smoothPointsGaussian is a function that smoothes the points with an gaussian kernel
+	in a spherical neighborhood
 	@param points is a vector which contains all given points
 	@param rootNode is a 3dTree which contains all given points in a sorted order
 	@param radius defines the range for the spherical neighboorhood search
-	@return is a vector which contains all smoothed points 
+	@return is a vector which contains all smoothed points
 */
 std::vector<Point3d> MainWindow::smoothPointsGaussian(const std::vector<Point3d>& points,
                                                       Node* rootNode, double radius)

@@ -123,6 +123,7 @@ private:
     // Point cloud
     bool m_drawMainPointCloud;
     bool m_drawMainPointCloudWithColorArray;
+    std::size_t m_drawSmoothedState;
 
     bool m_drawTemporary;
 
