@@ -5,9 +5,18 @@
 
 #include <vector>
 
+/**
+ * @brief Node of a KDTree.
+ */
 struct Node
 {
+    /**
+     * @brief Default constructor.
+     */
 	Node();
+    /**
+     * @brief Destructor.
+     */
     ~Node();
 
 	double median;
@@ -26,7 +35,22 @@ struct KDTree
 	static bool sortByZvalue(const Point3d& p1, const Point3d& p2);
 };
 
+/**
+ * @brief Computes all points that lie in the specified range.
+ * @param[in] tree Root node of the KDTree.
+ * @param[in] minMax 6-element array containing the min and max coordiantes of the range in x, y and
+ *                      and z axis. Storage layout [xMin, xMax, yMin, yMax, zMin, zMax]
+ * @return Returns a new vector with copies of the point positions.
+ */
 std::vector<Point3d> queryRange(Node* tree, const double minMax[6]);
+/**
+ * @brief Actual implementation of queryRange function.
+ * @param[in] tree Current node in the KDTree.
+ * @param[in] minMax 6-element array containing the min and max coordiantes of the range.
+ * @param[in] depth Depth of the current node in the tree (needed for coordiante selection)
+ * @param[in,out] out Vector containing the positions of points inside the range. Might be adapted
+ *                  by this function if tree is a leaf and points are inside the range.
+ */
 void queryRange_impl(Node* tree, const double minMax[6], unsigned int depth,
                      std::vector<Point3d>& out);
 
@@ -34,7 +58,21 @@ std::vector<Point3d> queryRadius(Node* tree, const double radius, Point3d center
 void queryRadius_impl(Node* tree, const double radius, unsigned int depth,
 	std::vector<Point3d>& out, Point3d centerPoint);
 
+/**
+ * @brief Find nearest neighbor of point in a KDTree.
+ * @param[in] tree Root node of the KDTree.
+ * @param[in] queryPoint Find nearest neighbor of this point.
+ * @return Returns a copy of the position of the nearest neighbor of queryPoint.
+ */
 Point3d nearestNeighbor_daniel(Node* tree, const Point3d& queryPoint);
+/**
+ * @brief Actual implementation of nearestNeighbor_daniel.
+ * @param[in] tree Current node in the KDTree.
+ * @param[in] queryPoint Coordiantes of query point.
+ * @param[in,out] minDist Pointer to currently smallest distance.
+ * @param[in,out] minPoint Pointer to currently nearest point.
+ * @param[in] depth Depth of the current node in the tree (needed for coordiante selection)
+ */
 void nearestNeighbor_daniel_impl(Node* tree, const double* queryPoint, double* minDist,
                                        Point3d* minPoint, unsigned int depth);
 
