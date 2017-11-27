@@ -134,6 +134,7 @@ private:
     bool m_drawNearestResultPoint;
 
     // Smoothing
+    bool m_currentModeIsSmoothed;
     bool m_drawSmoothedPoints;
     unsigned char m_SM_color[4];
     int m_SM_size;

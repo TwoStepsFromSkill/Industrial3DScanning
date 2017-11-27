@@ -29,6 +29,7 @@ GLwidget::GLwidget(QWidget* parent)
     , m_drawTemporary(false)
     , m_drawNearestQueryPoint(false)
     , m_drawNearestResultPoint(false)
+    , m_currentModeIsSmoothed(false)
     , m_drawSmoothedPoints(false)
     , m_drawThinnedPoints(false)
 {
@@ -217,25 +218,30 @@ bool GLwidget::eventFilter(QObject *obj, QEvent *event)
 
         if (keyEvent->key() == Qt::Key_H)
         {
-            if (m_drawSmoothedPoints)
+            if (m_currentModeIsSmoothed)
             {
                 m_drawSmoothedState = (m_drawSmoothedState + 1) % 3;
 
                 switch (m_drawSmoothedState)
                 {
                     case 0:
-                        m_drawMainPointCloud = true;
+                        m_drawMainPointCloud = false;
                         m_drawMainPointCloudWithColorArray = false;
-                        m_drawSmoothedPoints = false;
+                        m_drawSmoothedPoints = true;
                         break;
                     case 1:
+                        m_drawMainPointCloud = true;
+                        m_drawMainPointCloudWithColorArray = true;
+                        m_drawSmoothedPoints = false;
+                        break;
+                    case 2:
                         m_drawMainPointCloud = true;
                         m_drawMainPointCloudWithColorArray = false;
                         m_drawSmoothedPoints = true;
                         break;
-                    case 2:
-                        m_drawMainPointCloud = false;
-                        m_drawMainPointCloudWithColorArray = true;
+                    case 3:
+                        m_drawMainPointCloud = true;
+                        m_drawMainPointCloudWithColorArray = false;
                         m_drawSmoothedPoints = false;
                         break;
                 }
@@ -243,6 +249,7 @@ bool GLwidget::eventFilter(QObject *obj, QEvent *event)
             else
             {
                 m_drawMainPointCloud = !m_drawMainPointCloud;
+                m_drawMainPointCloudWithColorArray = false;
             }
 
             this->update();
@@ -347,6 +354,7 @@ void GLwidget::nearestNeighborResultPointChanged(const Point3d& resultPoint)
 void GLwidget::drawingSmoothedPointsChanged(bool value)
 {
     m_drawSmoothedPoints = value;
+    m_currentModeIsSmoothed = value;
     this->update();
 }
 
