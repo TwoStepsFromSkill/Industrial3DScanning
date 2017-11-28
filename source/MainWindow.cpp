@@ -13,6 +13,8 @@
 #include <iostream>
 #include <cmath>
 #include <algorithm>
+#include <vector>
+#include <array>
 
 #include "BaseTabWidget.h"
 #include "RangeQueryWidget.h"
@@ -398,7 +400,19 @@ void MainWindow::computeAndVisualizeSmoothing()
     duration_milli elapsed = std::chrono::system_clock::now() - startTime;
     std::cerr << "Finished Smoothing! Took [" << elapsed.count() / 1000.0 << "s]\n";
 
-    // Color adjustment
+    std::vector<unsigned char> colors = computeColorsForSmoothing(smoothedPoints);
+
+    m_glWidget->setSmoothedPoints(smoothedPoints);
+    m_glWidget->setPointColors(colors);
+
+    emit drawingTemporaryChanged(false);
+    emit drawingMainPointCloudChanged(false);
+    emit drawingSmoothedPointsChange(true);
+}
+
+std::vector<unsigned char> MainWindow::computeColorsForSmoothing(
+                                                const std::vector<Point3d>& smoothedPoints) const
+{
     std::vector<unsigned char> colors(3*m_points.size(), 0);
     std::vector<double> distances(m_points.size());
 
@@ -412,21 +426,65 @@ void MainWindow::computeAndVisualizeSmoothing()
     double min = *minmax.first;
     double max = *minmax.second;
 
+    // Grey scale
+// #pragma omp parallel for
+//     for (int i = 0; i < distances.size(); ++i)
+//     {
+//         unsigned char factor = ((distances[i] - min) / (max - min)) * 255;
+//         colors[i*3] = factor;
+//         colors[i*3 + 1] = 0;
+//         colors[i*3 + 2] = 0;
+//     }
+
+    // Between two colors
+//     constexpr unsigned char from[3] {31, 28, 24};
+//     constexpr unsigned char to[3] {142, 14, 0};
+//
+// #pragma omp parallel for
+//     for (int i = 0; i < distances.size(); ++i)
+//     {
+//         double factor = ((distances[i] - min) / (max - min));
+//         colors[i*3] = (1.0 - factor)*from[0] + factor*to[0];
+//         colors[i*3 + 1] = (1.0 - factor)*from[1] + factor*to[1];
+//         colors[i*3 + 2] = (1.0 - factor)*from[2] + factor*to[2];
+//     }
+
+    // Multiple colors (equally spaced)
+
+    // Rainbow
+//     const std::vector<std::array<unsigned char, 3>> lookup {{0,0,255},
+//                                                             {0,255,0},
+//                                                             {255,255,0},
+//                                                             {255,127,0},
+//                                                             {255,0,0}
+//     };
+    // Heat
+    const std::vector<std::array<unsigned char, 3>> lookup {{0,0,0},
+                                                            {122,0,0},
+                                                            {255,229,33},
+                                                            {255,255,255}
+    };
+    const double spacing = 1.0 / (lookup.size() - 1);
+
 #pragma omp parallel for
     for (int i = 0; i < distances.size(); ++i)
     {
-        unsigned char factor = ((distances[i] - min) / (max - min)) * 255;
-        colors[i*3] = factor;
-        colors[i*3 + 1] = factor;
-        colors[i*3 + 2] = factor;
+        double factor = ((distances[i] - min) / (max - min));
+
+        std::size_t startIdx = std::floor((lookup.size() - 1) * factor);
+        std::size_t endIdx = startIdx + 1;
+
+        double startFactor = startIdx * spacing;
+        double endFactor = endIdx * spacing;
+
+        double factorBetween = (factor - startFactor) / (endFactor - startFactor);
+
+        colors[i*3] = (1.0 - factorBetween)*lookup[startIdx][0] + factorBetween*lookup[endIdx][0];
+        colors[i*3 + 1] = (1.0 - factorBetween)*lookup[startIdx][1] + factorBetween*lookup[endIdx][1];
+        colors[i*3 + 2] = (1.0 - factorBetween)*lookup[startIdx][2] + factorBetween*lookup[endIdx][2];
     }
 
-    m_glWidget->setSmoothedPoints(smoothedPoints);
-    m_glWidget->setPointColors(colors);
-
-    emit drawingTemporaryChanged(false);
-    emit drawingMainPointCloudChanged(false);
-    emit drawingSmoothedPointsChange(true);
+    return colors;
 }
 
 void MainWindow::computeAndVisualizeThinning()

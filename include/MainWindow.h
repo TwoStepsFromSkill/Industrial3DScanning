@@ -104,6 +104,8 @@ private slots:
 
     void smoothTmpPointChanged(int);
     void thinTmpPointChanged(int);
+
+    std::vector<unsigned char> computeColorsForSmoothing(const std::vector<Point3d>& smoothedPoints) const;
 };
 
 #endif
