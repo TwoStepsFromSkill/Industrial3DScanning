@@ -24,7 +24,7 @@ GLwidget::GLwidget(QWidget* parent)
     , m_drawRangeQueryBox(false)
     , m_drawRangeQueryResult(false)
     , m_drawMainPointCloud(true)
-    , m_drawMainPointCloudWithColorArray(false)
+    , m_drawSmoothedPointCloudWithColorArray(false)
     , m_drawSmoothedState(0)
     , m_drawTemporary(false)
     , m_drawNearestQueryPoint(false)
@@ -70,23 +70,9 @@ void GLwidget::paintGL()
         glEnableClientState(GL_VERTEX_ARRAY);
 
         glPointSize(m_PC_size);
-
-        if (m_drawMainPointCloudWithColorArray)
-        {
-            glEnableClientState(GL_COLOR_ARRAY);
-            glVertexPointer(3, GL_DOUBLE, sizeof(Point3d), &m_points[0]);
-            glColorPointer(3, GL_UNSIGNED_BYTE, 3*sizeof(unsigned char), &m_pointColors[0]);
-            glDrawArrays(GL_POINTS, 0, (unsigned int) m_points.size());
-
-            glDisableClientState(GL_COLOR_ARRAY);
-        }
-        else
-        {
-            glColor4ubv(m_PC_color);
-            glVertexPointer(3, GL_DOUBLE, sizeof(Point3d), &m_points[0]);
-            glDrawArrays(GL_POINTS, 0, (unsigned int) m_points.size());
-        }
-
+        glColor4ubv(m_PC_color);
+        glVertexPointer(3, GL_DOUBLE, sizeof(Point3d), &m_points[0]);
+        glDrawArrays(GL_POINTS, 0, (unsigned int) m_points.size());
         glDisableClientState(GL_VERTEX_ARRAY);
     }
 
@@ -163,9 +149,22 @@ void GLwidget::paintGL()
         glEnableClientState(GL_VERTEX_ARRAY);
 
         glPointSize(m_SM_size);
-        glColor4ubv(m_SM_color);
-        glVertexPointer(3, GL_DOUBLE, sizeof(Point3d), &m_smoothedPoints[0]);
-        glDrawArrays(GL_POINTS, 0, (unsigned int) m_smoothedPoints.size());
+
+        if (m_drawSmoothedPointCloudWithColorArray)
+        {
+            glEnableClientState(GL_COLOR_ARRAY);
+            glVertexPointer(3, GL_DOUBLE, sizeof(Point3d), &m_smoothedPoints[0]);
+            glColorPointer(3, GL_UNSIGNED_BYTE, 3*sizeof(unsigned char), &m_pointColors[0]);
+            glDrawArrays(GL_POINTS, 0, (unsigned int) m_smoothedPoints.size());
+
+            glDisableClientState(GL_COLOR_ARRAY);
+        }
+        else
+        {
+            glColor4ubv(m_SM_color);
+            glVertexPointer(3, GL_DOUBLE, sizeof(Point3d), &m_smoothedPoints[0]);
+            glDrawArrays(GL_POINTS, 0, (unsigned int) m_smoothedPoints.size());
+        }
 
         glDisableClientState(GL_VERTEX_ARRAY);
     }
@@ -220,28 +219,45 @@ bool GLwidget::eventFilter(QObject *obj, QEvent *event)
         {
             if (m_currentModeIsSmoothed)
             {
-                m_drawSmoothedState = (m_drawSmoothedState + 1) % 3;
+                m_drawSmoothedState = (m_drawSmoothedState + 1) % 6;
+
+                auto minmax = std::minmax_element(m_distances.begin(), m_distances.end());
+                double min = *minmax.first;
+                double max = *minmax.second;
 
                 switch (m_drawSmoothedState)
                 {
                     case 0:
                         m_drawMainPointCloud = false;
-                        m_drawMainPointCloudWithColorArray = false;
+                        m_drawSmoothedPointCloudWithColorArray = false;
                         m_drawSmoothedPoints = true;
                         break;
                     case 1:
                         m_drawMainPointCloud = true;
-                        m_drawMainPointCloudWithColorArray = true;
-                        m_drawSmoothedPoints = false;
+                        m_drawSmoothedPointCloudWithColorArray = false;
+                        m_drawSmoothedPoints = true;
                         break;
                     case 2:
-                        m_drawMainPointCloud = true;
-                        m_drawMainPointCloudWithColorArray = false;
+                        computeColorGrey(min, max);
+                        m_drawMainPointCloud = false;
+                        m_drawSmoothedPointCloudWithColorArray = true;
                         m_drawSmoothedPoints = true;
                         break;
                     case 3:
+                        computeColorRainbow(min, max);
+                        m_drawMainPointCloud = false;
+                        m_drawSmoothedPointCloudWithColorArray = true;
+                        m_drawSmoothedPoints = true;
+                        break;
+                    case 4:
+                        computeColorHeat(min, max);
+                        m_drawMainPointCloud = false;
+                        m_drawSmoothedPointCloudWithColorArray = true;
+                        m_drawSmoothedPoints = true;
+                        break;
+                    case 5:
                         m_drawMainPointCloud = true;
-                        m_drawMainPointCloudWithColorArray = false;
+                        m_drawSmoothedPointCloudWithColorArray = false;
                         m_drawSmoothedPoints = false;
                         break;
                 }
@@ -249,7 +265,7 @@ bool GLwidget::eventFilter(QObject *obj, QEvent *event)
             else
             {
                 m_drawMainPointCloud = !m_drawMainPointCloud;
-                m_drawMainPointCloudWithColorArray = false;
+                m_drawSmoothedPointCloudWithColorArray = false;
             }
 
             this->update();
@@ -729,4 +745,73 @@ void GLwidget::updateRangeQueryBoxData()
     m_btr[0] = m_rangeCenter[0] + (m_rangeExtend[0] / 2.0);
     m_btr[1] = m_rangeCenter[1] + (m_rangeExtend[1] / 2.0);
     m_btr[2] = m_rangeCenter[2] + (m_rangeExtend[2] / 2.0);
+}
+
+void GLwidget::computeColorGrey(double min, double max)
+{
+#pragma omp parallel for
+    for (int i = 0; i < m_distances.size(); ++i)
+    {
+        unsigned char factor = ((m_distances[i] - min) / (max - min)) * 255;
+        m_pointColors[i*3] = factor;
+        m_pointColors[i*3 + 1] = factor;
+        m_pointColors[i*3 + 2] = factor;
+    }
+}
+
+void GLwidget::computeColorRainbow(double min, double max)
+{
+    const std::vector<std::array<unsigned char, 3>> lookup {{0,0,255},
+                                                            {0,255,0},
+                                                            {255,255,0},
+                                                            {255,127,0},
+                                                            {255,0,0}};
+
+    const double spacing = 1.0 / (lookup.size() - 1);
+
+#pragma omp parallel for
+    for (int i = 0; i < m_distances.size(); ++i)
+    {
+        double factor = ((m_distances[i] - min) / (max - min));
+
+        std::size_t startIdx = std::floor((lookup.size() - 1) * factor);
+        std::size_t endIdx = startIdx + 1;
+
+        double startFactor = startIdx * spacing;
+        double endFactor = endIdx * spacing;
+
+        double factorBetween = (factor - startFactor) / (endFactor - startFactor);
+
+        m_pointColors[i*3] = (1.0 - factorBetween)*lookup[startIdx][0] + factorBetween*lookup[endIdx][0];
+        m_pointColors[i*3 + 1] = (1.0 - factorBetween)*lookup[startIdx][1] + factorBetween*lookup[endIdx][1];
+        m_pointColors[i*3 + 2] = (1.0 - factorBetween)*lookup[startIdx][2] + factorBetween*lookup[endIdx][2];
+    }
+}
+
+void GLwidget::computeColorHeat(double min, double max)
+{
+    const std::vector<std::array<unsigned char, 3>> lookup {{0,0,0},
+                                                            {255,0,0},
+                                                            {255,255,0},
+                                                            {255,255,255}};
+
+    const double spacing = 1.0 / (lookup.size() - 1);
+
+#pragma omp parallel for
+    for (int i = 0; i < m_distances.size(); ++i)
+    {
+        double factor = ((m_distances[i] - min) / (max - min));
+
+        std::size_t startIdx = std::floor((lookup.size() - 1) * factor);
+        std::size_t endIdx = startIdx + 1;
+
+        double startFactor = startIdx * spacing;
+        double endFactor = endIdx * spacing;
+
+        double factorBetween = (factor - startFactor) / (endFactor - startFactor);
+
+        m_pointColors[i*3] = (1.0 - factorBetween)*lookup[startIdx][0] + factorBetween*lookup[endIdx][0];
+        m_pointColors[i*3 + 1] = (1.0 - factorBetween)*lookup[startIdx][1] + factorBetween*lookup[endIdx][1];
+        m_pointColors[i*3 + 2] = (1.0 - factorBetween)*lookup[startIdx][2] + factorBetween*lookup[endIdx][2];
+    }
 }

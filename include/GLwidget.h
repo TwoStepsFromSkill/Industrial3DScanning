@@ -25,8 +25,13 @@ public:
     void updateScene();
 
     //points to draw
-    void setPoints    (std::vector<Point3d>& points)   { m_points = points; updateScene(); }
-    void setPointColors (std::vector<unsigned char>& colors) { m_pointColors = colors; }
+    void setPoints    (std::vector<Point3d>& points)
+    {
+        m_points = points;
+        m_pointColors.resize(points.size() * 3);
+        updateScene();
+    }
+    void setPointDistances (std::vector<double>& distances) { m_distances = distances; }
 
     //access to data
     std::vector<Point3d>& points() { return m_points; }
@@ -37,8 +42,8 @@ public:
     void setTempPoint(const Point3d& p) { m_tempPoint = p; }
     void setTempRadiusPoints(const std::vector<Point3d>& pts) { m_tempRadiusPoints = pts; }
 
-    void drawingMainPointWithColorArray(bool val)
-    { m_drawMainPointCloudWithColorArray = val; this->update(); }
+    void drawingSmoothedPointWithColorArray(bool val)
+    { m_drawSmoothedPointCloudWithColorArray = val; this->update(); }
 
     //return camera
     GLcamera& camera(){return m_camera;}
@@ -88,8 +93,13 @@ private:
 
     void updateRangeQueryBoxData();
 
+    void computeColorGrey(double min, double max);
+    void computeColorRainbow(double min, double max);
+    void computeColorHeat(double min, double max);
+
     std::vector<Point3d> m_points;    //point data
     std::vector<unsigned char> m_pointColors;
+    std::vector<double> m_distances;
     std::vector<Point3d> m_pointsInRange;
     std::vector<Point3d> m_smoothedPoints;
     std::vector<Point3d> m_thinnedPoints;
@@ -122,7 +132,7 @@ private:
 
     // Point cloud
     bool m_drawMainPointCloud;
-    bool m_drawMainPointCloudWithColorArray;
+    bool m_drawSmoothedPointCloudWithColorArray;
     std::size_t m_drawSmoothedState;
 
     bool m_drawTemporary;
