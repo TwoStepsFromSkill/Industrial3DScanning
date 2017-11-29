@@ -28,12 +28,33 @@ struct Node
 
 struct KDTree
 {
+    /**
+	@brief function which creats an 3DTree
+	@details on the left side of the tree are the points with small x,y,z values
+	@param rangeBegin is a pointer which is pointing on an Point3d
+	@param rangeEnd is a pointer which is pointing on the adress behind the last Point3d
+	@param depth is the depth of the tree with which the actual dimension can be find out
+	@return the root node of the 3DTree
+    */
 	static Node* buildKDTree(Point3d* rangeBegin, Point3d* rangeEnd, unsigned int depth);
 
+    /**
+	@brief sorts two Point3d by their x value
+    */
 	static bool sortByXvalue(const Point3d& p1, const Point3d& p2);
+    /**
+    @brief sorts two Point3d by their y value
+    */
 	static bool sortByYvalue(const Point3d& p1, const Point3d& p2);
+    /**
+    @brief sorts two Point3d by their z value
+    */
 	static bool sortByZvalue(const Point3d& p1, const Point3d& p2);
 };
+
+/** @defgroup group_kdtree KDTree methods
+ *  @{
+ */
 
 /**
  * @brief Computes all points that lie in the specified range.
@@ -54,6 +75,13 @@ std::vector<Point3d> queryRange(Node* tree, const double minMax[6]);
 void queryRange_impl(Node* tree, const double minMax[6], unsigned int depth,
                      std::vector<Point3d>& out);
 
+/**
+ * @brief function which calls the recursiv function that calculate all neighboorpoints of the centerPoint
+ * @param tree is a pointer on the root node of a 3DTree
+ * @param radius is the radius in which the function search spherical for the neighboorpoints of the centerPoint
+ * @param centerPoint is the Point3d for which the neighboorpoints should be found
+ * @return a vector of Point3d which contains all neighboorpoints
+ */
 std::vector<Point3d> queryRadius(Node* tree, const double radius, Point3d centerPoint);
 void queryRadius_impl(Node* tree, const double radius, unsigned int depth,
 	std::vector<Point3d>& out, Point3d centerPoint);
@@ -106,5 +134,7 @@ void queryRangeSphere_impl(Node* tree, Point3d* center, const double radius, uns
 
 //Thinning
 void homogeneousThinning(Node* globalTree, Node* subTree, const double radius, std::vector<Point3d>& output);
+
+/** @} */
 
 #endif // KD_TREE_H
