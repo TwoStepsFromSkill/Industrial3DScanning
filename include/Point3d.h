@@ -88,6 +88,10 @@ struct Point3d
     bool flag_ignore;
 };
 
+/** @defgroup group_point Point3D methods
+ *  @{
+ */
+
 /**
  * @brief Square a value.
  */
@@ -117,5 +121,7 @@ double  sqDistance3d(const Point3d& v1, const Point3d& v2);
  * @brief Computes distance between two points.
  */
 double  distance3d  (const Point3d& v1, const Point3d& v2);
+
+/** @} */
 
 #endif //end the include guard MY_POINT_H

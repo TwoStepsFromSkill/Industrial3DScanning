@@ -128,11 +128,33 @@ double getDimension(Point3d point, unsigned int depth);
 
 
 
-//Spherical Range Query
+/**
+@brief	initializes the spherical range query
+@param	tree is the K-D-Tree which stores the point cloud
+@param	center is the middle of the sphere
+@param	radius specifies the search area around the center point
+@param	flagging is false by default and only used for efficient thinning
+*/
 std::vector<Point3d*> queryRangeSphere(Node* tree, Point3d* center, const double radius, bool flagging);
+
+/**
+@brief	implements the spherical range query
+@param	tree is the K-D-Tree which stores the point cloud
+@param	center is the middle of the sphere
+@param	radius specifies the search area around the center point
+@param	depth stores the current level of the traversed tree
+@param	out stores the points founds in the neighborhood
+@param	flagging is false by default and only used for efficient thinning
+*/
 void queryRangeSphere_impl(Node* tree, Point3d* center, const double radius, unsigned int depth, std::vector<Point3d*>& out, bool flagging);
 
-//Thinning
+/**
+@brief	Thins a given pointcloud (stored in K-D-Tree) by a given radius.
+@param	globalTree root node of the K-D-Tree that stores the original point data
+@param	subTree node of the currently (used for recursive traversion)
+@param	radius specifies the degree of thinning
+@param	output stores the remaining points
+*/
 void homogeneousThinning(Node* globalTree, Node* subTree, const double radius, std::vector<Point3d>& output);
 
 /** @} */
