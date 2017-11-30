@@ -10,4 +10,6 @@ set(HEADER
     ${CMAKE_CURRENT_SOURCE_DIR}/NearestNeighborWidget.h
     ${CMAKE_CURRENT_SOURCE_DIR}/SmoothingWidget.h
     ${CMAKE_CURRENT_SOURCE_DIR}/ThinningWidget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Matrix.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/SVD.h
     PARENT_SCOPE)
