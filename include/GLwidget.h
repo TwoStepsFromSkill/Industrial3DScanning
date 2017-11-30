@@ -39,8 +39,23 @@ public:
     void setSmoothedPoints(const std::vector<Point3d>& smoothedPoints) { m_smoothedPoints = smoothedPoints; }
     void setThinnedPoints(const std::vector<Point3d>& thinnedPoints) { m_thinnedPoints = thinnedPoints; }
 
+    void setBFPCorners(const std::vector<Point3d>& corners) { m_bfpCorners = corners; }
+
     void setTempPoint(const Point3d& p) { m_tempPoint = p; }
     void setTempRadiusPoints(const std::vector<Point3d>& pts) { m_tempRadiusPoints = pts; }
+
+    void drawingMainPointWithColorArray(bool val)
+    {
+        m_drawMainPointCloudWithColorArray = val;
+
+        auto minmax = std::minmax_element(m_distances.begin(), m_distances.end());
+        double min = *minmax.first;
+        double max = *minmax.second;
+
+        computeColorDiverge(min, max);
+
+        this->update();
+    }
 
     void drawingSmoothedPointWithColorArray(bool val)
     { m_drawSmoothedPointCloudWithColorArray = val; this->update(); }
@@ -77,6 +92,8 @@ public slots:
     // Thinned points
     void drawingThinnedPointsChanged(bool value);
 
+    void drawingBestFitPlaneChanged(bool value);
+
 private:
     void loadDrawSettings();
     void writeSettings();
@@ -96,6 +113,7 @@ private:
     void computeColorGrey(double min, double max);
     void computeColorRainbow(double min, double max);
     void computeColorHeat(double min, double max);
+    void computeColorDiverge(double min, double max);
 
     std::vector<Point3d> m_points;    //point data
     std::vector<unsigned char> m_pointColors;
@@ -103,6 +121,9 @@ private:
     std::vector<Point3d> m_pointsInRange;
     std::vector<Point3d> m_smoothedPoints;
     std::vector<Point3d> m_thinnedPoints;
+
+    std::vector<Point3d> m_bfpCorners;
+    bool m_drawBFP;
 
     Point3d m_tempPoint;
     std::vector<Point3d> m_tempRadiusPoints;
@@ -132,6 +153,7 @@ private:
 
     // Point cloud
     bool m_drawMainPointCloud;
+    bool m_drawMainPointCloudWithColorArray;
     bool m_drawSmoothedPointCloudWithColorArray;
     std::size_t m_drawSmoothedState;
 

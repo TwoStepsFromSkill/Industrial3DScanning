@@ -64,6 +64,8 @@ signals:
     void drawingSmoothedPointsChange(bool);
     void drawingThinnedPointsChange(bool);
 
+    void drawingBestFitPlaneChange(bool);
+
 private:
     void loadFileXYZ(const char* filename, std::vector<Point3d>& points);
     void updateSidebarWidgetData();
@@ -107,6 +109,10 @@ private slots:
 
     void smoothTmpPointChanged(int);
     void thinTmpPointChanged(int);
+
+    void applyBestFitPlane();
+
+    std::tuple<Point3d, std::vector<Point3d>, std::vector<Point3d>> bestFitPlane_daniel();
 };
 
 #endif
