@@ -22,6 +22,7 @@
 #include "SmoothingWidget.h"
 #include "ThinningWidget.h"
 #include "KDTree.h"
+#include "BestFitPlaneWidget.h"
 
 using duration_micro = std::chrono::duration<double, std::micro>;
 using duration_milli = std::chrono::duration<double, std::milli>;
@@ -56,6 +57,9 @@ MainWindow::MainWindow()
 
     m_thinningWidget = new ThinningWidget(this);
     m_tabWidget->addTab(m_thinningWidget, QString("Thinning"));
+
+    m_bestFitPlaneWidget = new BestFitPlaneWidget(this);
+    m_tabWidget->addTab(m_bestFitPlaneWidget, QString("Best Fit Plane"));
 
     m_mainLayout->addWidget(m_tabWidget);
 
