@@ -868,23 +868,24 @@ void GLwidget::computeColorDiverge(double min, double max)
                                                             {255,255,255},
                                                             {0,255,0}};
 
-    const double spacing = 1.0 / (lookup.size() - 1);
-
 #pragma omp parallel for
     for (int i = 0; i < m_distances.size(); ++i)
     {
-        double factor = ((m_distances[i] - min) / (max - min));
+        if (m_distances[i] <= 0)
+        {
+            const double factor = ((m_distances[i] - min) / (-min));
 
-        std::size_t startIdx = std::floor((lookup.size() - 1) * factor);
-        std::size_t endIdx = startIdx + 1;
+            m_pointColors[i*3] = (1.0 - factor)*lookup[0][0] + factor*lookup[1][0];
+            m_pointColors[i*3 + 1] = (1.0 - factor)*lookup[0][1] + factor*lookup[1][1];
+            m_pointColors[i*3 + 2] = (1.0 - factor)*lookup[0][2] + factor*lookup[1][2];
+        }
+        else
+        {
+            const double factor = ((m_distances[i]) / (max));
 
-        double startFactor = startIdx * spacing;
-        double endFactor = endIdx * spacing;
-
-        double factorBetween = (factor - startFactor) / (endFactor - startFactor);
-
-        m_pointColors[i*3] = (1.0 - factorBetween)*lookup[startIdx][0] + factorBetween*lookup[endIdx][0];
-        m_pointColors[i*3 + 1] = (1.0 - factorBetween)*lookup[startIdx][1] + factorBetween*lookup[endIdx][1];
-        m_pointColors[i*3 + 2] = (1.0 - factorBetween)*lookup[startIdx][2] + factorBetween*lookup[endIdx][2];
+            m_pointColors[i*3] = (1.0 - factor)*lookup[1][0] + factor*lookup[2][0];
+            m_pointColors[i*3 + 1] = (1.0 - factor)*lookup[1][1] + factor*lookup[2][1];
+            m_pointColors[i*3 + 2] = (1.0 - factor)*lookup[1][2] + factor*lookup[2][2];
+        }
     }
 }
