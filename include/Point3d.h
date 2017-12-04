@@ -29,39 +29,39 @@ struct Point3d
      * @return Returns a new vector that is the addition of the vector stored
      *          inside the struct and p2.
      */
-    Point3d operator + (const Point3d& p2) const; // + operation of two points (pt3 = pt1 + pt2)
+    Point3d operator + (const Point3d& p2) const;
     /**
      * @brief Vector subtraction.
      * @param[in] p2 Vector to subtractfrom the one stored inside the struct.
      * @return Returns a new vector that is the subtraction of the vector stored
      *          inside the struct and p2.
      */
-    Point3d operator - (const Point3d& p2) const; // - operation of two points (pt3 = pt1 - pt2)
+    Point3d operator - (const Point3d& p2) const;
     /**
      * @brief Vector scalar multiplication.
      * @param[in] scalar A scalar value.
      * @returns Returns a scaled version of the vector stored inside the struct.
      */
-    Point3d operator * (double scalar) const;     // multiplication with a scalar value(pt2 = pt1 * 0.5)
+    Point3d operator * (double scalar) const;
 
     /**
      * @brief Add vector onto the current one.
      * @param[in] p2 Vector to add the the one stored inside the struct.
      * @return Returns a reference to itself.
      */
-    Point3d& operator += (const Point3d& p2); // += operation of two points (pt1+= pt2  -> pt1 = pt1 + pt2)
+    Point3d& operator += (const Point3d& p2);
     /**
      * @brief Subtract vector from the current one.
      * @param[in] p2 Vector to subtract from the one stored inside the struct.
      * @return Returns a reference to itself.
      */
-    Point3d& operator -= (const Point3d& p2); // += operation of two points (pt1-= pt2  -> pt1 = pt1 - pt2)
+    Point3d& operator -= (const Point3d& p2);
     /**
      * @brief Multiply current vector with a scalar.
      * @param[in] scalar A scalar value.
      * @returns Returns a reference to itself.
      */
-    Point3d& operator *= (double scalar);     // *= multiplication with a scalar (pt1*= s  -> pt1 = pt1 * s)
+    Point3d& operator *= (double scalar);
 
     /**
      * @brief Element access.
@@ -78,11 +78,11 @@ struct Point3d
      * @brief Compare vector to another.
      * @return Returns true iff all elements are equal.
      */
-    bool operator == (const Point3d& p2);	// == comparison of two points (p1 == p2 -> true)
+    bool operator == (const Point3d& p2);
     /**
      * @brief Check if vectors are inequal.
      */
-    bool operator != (const Point3d& p2);	// != comparison of two points (p1 != p2 -> true)
+    bool operator != (const Point3d& p2);
 
     double data[3];
     bool flag_ignore;
