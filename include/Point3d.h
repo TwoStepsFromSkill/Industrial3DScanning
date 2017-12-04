@@ -98,10 +98,16 @@ struct Point3d
 double  sqr(double value);
 /**
  * @brief Computes length of a given vector.
+ *
+ * Computes the length as \f$ s = \sqrt{p_{x}^2 + p_{y}^2 + p_{z}^2}\f$.
  */
 double  vectorLength(const Point3d& v);
 /**
  * @brief Computes the inner product between two vectors.
+ *
+ * The dot product: \f[
+ *  \mathbf{u}^{T}\mathbf{v} = \sum_{i = 0}^{n}{u_{i}v_{i}}
+ * \f]
  */
 double  dotProduct  (const Point3d& v1, const Point3d& v2);
 /**
@@ -111,14 +117,26 @@ Point3d crossProduct(const Point3d& v1, const Point3d& v2);
 /**
  * @brief Normalizes a given vector inplace.
  * @post vectorLength(v) == 1.0
+ *
+ * The normalized vector is: \f[
+ *  \frac{\mathbf{n}}{\|\mathbf{n}\|}
+ * \f].
  */
 void    normalizeVector(Point3d& v);
 /**
  * @brief Computes squared distance between two points.
+ *
+ * This computes: \f[
+ *  (v_{x} - u_{x})^2 + (v_{y} - u_{y})^2 + (v_{y} - u_{y})^2
+ * \f]
  */
 double  sqDistance3d(const Point3d& v1, const Point3d& v2);
 /**
  * @brief Computes distance between two points.
+ *
+ *  * This computes: \f[
+ *  \sqrt{(v_{x} - u_{x})^2 + (v_{y} - u_{y})^2 + (v_{y} - u_{y})^2}
+ * \f]
  */
 double  distance3d  (const Point3d& v1, const Point3d& v2);
 
