@@ -6,7 +6,7 @@
 #include <vector>
 
 /**
- * @brief Node of a KDTree.
+ * @brief Node of a KDTree. 
  */
 struct Node
 {
@@ -25,7 +25,9 @@ struct Node
 	Point3d* ptrFirstPoint;
 	Point3d* ptrLastPoint;
 };
-
+/**
+*@image html 3dtree.png
+*/
 struct KDTree
 {
     /**
@@ -157,6 +159,19 @@ void queryRangeSphere_impl(Node* tree, Point3d* center, const double radius, uns
 */
 void homogeneousThinning(Node* globalTree, Node* subTree, const double radius, std::vector<Point3d>& output);
 
-/** @} */
 
+
+std::vector<Point3d> smoothPointsAverage(const std::vector<Point3d>& points, Node* rootNode, double radius);
+/**
+* @brief smoothPointsGaussian is a function that smoothes the points with an gaussian kernel
+in a spherical neighborhood
+* @details  The distance between \f$(x_1,y_1)\f$ and \f$(x_2,y_2)\f$ is
+\f$\sqrt{(x_2-x_1)^2+(y_2-y_1)^2}\f$.
+* @param points is a vector which contains all given points
+* @param rootNode is a 3dTree which contains all given points in a sorted order
+* @param radius defines the range for the spherical neighboorhood search
+* @return is a vector which contains all smoothed points
+*/
+std::vector<Point3d> smoothPointsGaussian(const std::vector<Point3d>& points, Node* rootNode, double radius);
+/** @} */
 #endif // KD_TREE_H

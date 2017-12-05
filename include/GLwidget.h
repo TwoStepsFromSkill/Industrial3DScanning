@@ -41,6 +41,8 @@ public:
 
     void setBFPCorners(const std::vector<Point3d>& corners) { m_bfpCorners = corners; }
 
+	void setBFLPoints(const std::vector<Point3d>& points) { m_bflPoints = points; }
+
     void setTempPoint(const Point3d& p) { m_tempPoint = p; }
     void setTempRadiusPoints(const std::vector<Point3d>& pts) { m_tempRadiusPoints = pts; }
 
@@ -124,6 +126,9 @@ private:
 
     std::vector<Point3d> m_bfpCorners;
     bool m_drawBFP;
+
+	std::vector<Point3d> m_bflPoints;
+	bool m_drawBFL;
 
     Point3d m_tempPoint;
     std::vector<Point3d> m_tempRadiusPoints;

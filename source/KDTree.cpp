@@ -466,3 +466,57 @@ void homogeneousThinning(Node* globalTree, Node* subTree, const double radius, s
 		homogeneousThinning(globalTree, subTree->rightChild, radius, output);
 	}
 }
+
+std::vector<Point3d> smoothPointsAverage(const std::vector<Point3d>& points,
+	Node* rootNode, double radius)
+{
+	std::vector<Point3d> smoothedPoints;
+	smoothedPoints.resize(points.size());
+
+#pragma omp parallel for
+	for (int i = 0; i < points.size(); ++i)
+	{
+		const Point3d& point = points[i];
+
+		Point3d smoothedPointAv;
+		std::vector<Point3d> neighborPoints = queryRadius(rootNode, radius, point);
+
+		for (std::size_t j = 0; j < neighborPoints.size(); ++j)
+		{
+			smoothedPointAv += neighborPoints[j];
+		}
+
+		smoothedPointAv *= 1.0 / neighborPoints.size();
+		smoothedPoints[i] = smoothedPointAv;
+	}
+
+	return smoothedPoints;
+}
+std::vector<Point3d> smoothPointsGaussian(const std::vector<Point3d>& points,
+	Node* rootNode, double radius)
+{
+	std::vector<Point3d> smoothedPoints;
+	smoothedPoints.resize(points.size());
+
+#pragma omp parallel for
+	for (int i = 0; i < points.size(); ++i)
+	{
+		const Point3d& point = points[i];
+
+		Point3d smoothedPointSum;
+		std::vector<Point3d> neighborPoints = queryRadius(rootNode, radius, point);
+		double sumWeights = 0;
+
+		for (std::size_t j = 0; j < neighborPoints.size(); ++j)
+		{
+			double distance = sqDistance3d(point, neighborPoints[j]);
+			double weight = std::exp((-distance) / radius);
+			smoothedPointSum += (neighborPoints[j] * weight);
+			sumWeights += weight;
+		}
+		if (sumWeights != 0)
+			smoothedPoints[i] = smoothedPointSum * (1 / sumWeights);
+	}
+
+	return smoothedPoints;
+}

@@ -6,6 +6,8 @@
 #include <QFileInfo>
 #include <QEvent>
 #include <QKeyEvent>
+#include <array>
+#include <vector>
 
 #include <cmath>
 
@@ -239,10 +241,24 @@ void GLwidget::paintGL()
             glVertex3d(m_bfpCorners[i][0], m_bfpCorners[i][1], m_bfpCorners[i][2]);
         }
         glEnd();
-
-        glPopAttrib();
+				
+		glPopAttrib();
     }
 
+	if (m_drawBFL)
+	{
+		glPushAttrib(GL_LINE_BIT);
+		glLineWidth(2);
+		glColor3f(0.0f, 0.0f, 1.0f);
+
+		glBegin(GL_LINE);
+		for (std::size_t i = 0; i < 2; ++i)
+		{
+			glVertex3d(m_bflPoints[i][0], m_bflPoints[i][1], m_bflPoints[i][2]);
+		}
+		glEnd();
+		glPopAttrib();
+	}
     //draw coordinate frame
     drawCoordinateAxes();
 
@@ -423,6 +439,7 @@ void GLwidget::drawingThinnedPointsChanged(bool value)
 void GLwidget::drawingBestFitPlaneChanged(bool value)
 {
     m_drawBFP = value;
+	m_drawBFL = value;
     this->update();
 }
 
@@ -813,6 +830,7 @@ void GLwidget::computeColorRainbow(double min, double max)
                                                             {255,127,0},
                                                             {255,0,0}};
 
+
     const double spacing = 1.0 / (lookup.size() - 1);
 
 #pragma omp parallel for
@@ -836,10 +854,10 @@ void GLwidget::computeColorRainbow(double min, double max)
 
 void GLwidget::computeColorHeat(double min, double max)
 {
-    const std::vector<std::array<unsigned char, 3>> lookup {{0,0,0},
-                                                            {255,0,0},
-                                                            {255,255,0},
-                                                            {255,255,255}};
+	const std::vector<std::array<unsigned char, 3>> lookup {{0,0,0},
+															{255,0,0},
+															{255,255,0},
+															{255,255,255}} ;	
 
     const double spacing = 1.0 / (lookup.size() - 1);
 

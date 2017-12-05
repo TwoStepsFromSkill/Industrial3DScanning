@@ -130,7 +130,7 @@ MainWindow::MainWindow()
 
     m_rangeWidget->activate();
 
-	// Smooting section
+	// Smoothing section
 	connect(m_smoothingWidget, SIGNAL(applyPressed()), this, SLOT(applySmoothing()));
     connect(this, SIGNAL(drawingSmoothedPointsChange(bool)), m_glWidget, SLOT(drawingSmoothedPointsChanged(bool)));
     connect(m_smoothingWidget, SIGNAL(tempPointChanged(int)), this, SLOT(smoothTmpPointChanged(int)));
@@ -221,7 +221,7 @@ void MainWindow::loadFileXYZ(const char* filename, std::vector<Point3d>& points)
 
     while (file >> x >> y >> z)
     {
-        points.emplace_back(x, y, z);
+        points.emplace_back(x, y, 0.0);
     }
 
     file.close();
@@ -452,75 +452,19 @@ void MainWindow::computeAndVisualizeThinning()
     emit drawingThinnedPointsChange(true);
 }
 
-std::vector<Point3d> MainWindow::smoothPointsAverage(const std::vector<Point3d>& points,
-                                                     Node* rootNode, double radius)
-{
-	std::vector<Point3d> smoothedPoints;
-    smoothedPoints.resize(points.size());
-
-#pragma omp parallel for
-	for(int i = 0; i < points.size(); ++i)
-	{
-		const Point3d& point = points[i];
-
-		Point3d smoothedPointAv;
-		std::vector<Point3d> neighborPoints = queryRadius(rootNode, radius, point);
-
-        for (std::size_t j = 0; j < neighborPoints.size(); ++j)
-		{
-			smoothedPointAv += neighborPoints[j];
-		}
-
-		smoothedPointAv *= 1.0 / neighborPoints.size();
-		smoothedPoints[i] = smoothedPointAv;
-	}
-
-	return smoothedPoints;
-}
-
-/**
-	@brief smoothPointsGaussian is a function that smoothes the points with an gaussian kernel
-	in a spherical neighborhood
-	@param points is a vector which contains all given points
-	@param rootNode is a 3dTree which contains all given points in a sorted order
-	@param radius defines the range for the spherical neighboorhood search
-	@return is a vector which contains all smoothed points
-*/
-std::vector<Point3d> MainWindow::smoothPointsGaussian(const std::vector<Point3d>& points,
-                                                      Node* rootNode, double radius)
-{
-	std::vector<Point3d> smoothedPoints;
-	smoothedPoints.resize(points.size());
-
-#pragma omp parallel for
-	for (int i = 0; i < points.size(); ++i)
-	{
-		const Point3d& point = points[i];
-
-		Point3d smoothedPointSum;
-		std::vector<Point3d> neighborPoints = queryRadius(rootNode, radius, point);
-		double sumWeights = 0;
-
-		for (std::size_t j = 0; j < neighborPoints.size(); ++j)
-		{
-			double distance = sqDistance3d(point, neighborPoints[j]);
-			double weight = std::exp((-distance) / radius);
-			smoothedPointSum += (neighborPoints[j] * weight);
-			sumWeights += weight;
-		}
-		if(sumWeights != 0)
-			smoothedPoints[i] = smoothedPointSum * (1/sumWeights);
-	}
-
-	return smoothedPoints;
-}
 
 void MainWindow::applyBestFitPlane()
 {
     auto startTime = std::chrono::system_clock::now();
         auto planeParts = bestFitPlane_daniel();
-    duration_milli elapsed = std::chrono::system_clock::now() - startTime;
+    
+	duration_milli elapsed = std::chrono::system_clock::now() - startTime;
     std::cerr << "Computed BFP! Took [" << elapsed.count() << "ms]\n";
+	
+	auto startTimeBFL = std::chrono::system_clock::now();
+	auto linePoints = BestFitLine_elke();
+	elapsed = std::chrono::system_clock::now() - startTimeBFL;
+	std::cerr << "Computed BFL! Took [" << elapsed.count() << "ms]\n";
 
     const Point3d& C = std::get<0>(planeParts);
     const Point3d& EV = std::get<2>(planeParts)[2];
@@ -535,6 +479,8 @@ void MainWindow::applyBestFitPlane()
     m_glWidget->setBFPCorners(std::get<1>(planeParts));
     m_glWidget->setPointDistances(distances);
     m_glWidget->drawingMainPointWithColorArray(true);
+
+	m_glWidget->setBFLPoints(linePoints);
 
     emit drawingBestFitPlaneChange(true);
 }
@@ -633,4 +579,81 @@ std::tuple<Point3d, std::vector<Point3d>, std::vector<Point3d>> MainWindow::best
     evs.push_back(EV2);
 
     return std::make_tuple(C, corners, evs);
+}
+
+std::vector<Point3d> MainWindow::BestFitLine_elke()
+{
+	// Computer center (mean)
+	double centerX = 0;
+	double centerY = 0;
+	double centerZ = 0;
+
+#pragma omp parallel for reduction(+:centerX,centerY,centerZ)
+	for (int i = 0; i < m_points.size(); ++i)
+	{
+		centerX += m_points[i][0];
+		centerY += m_points[i][1];
+		centerZ += m_points[i][2];
+	}
+
+	centerX /= m_points.size();
+	centerY /= m_points.size();
+	centerZ /= m_points.size();
+
+	// Compute covariance matrix
+	double Cxx = 0; double Cxy = 0; double Cxz = 0;
+	double Cyy = 0; double Cyz = 0;
+	double Czz = 0;
+
+	std::size_t n = m_points.size() - 1;
+
+#pragma omp parallel for reduction(+:centerX,centerY,centerZ)
+	for (int i = 0; i < m_points.size(); ++i)
+	{
+		Cxx += (m_points[i][0] - centerX)*(m_points[i][0] - centerX);
+		Cxy += (m_points[i][0] - centerX)*(m_points[i][1] - centerY);
+		Cxz += (m_points[i][0] - centerX)*(m_points[i][2] - centerZ);
+
+		Cyy += (m_points[i][1] - centerY)*(m_points[i][1] - centerY);
+		Cyz += (m_points[i][1] - centerY)*(m_points[i][2] - centerZ);
+
+		Czz += (m_points[i][2] - centerZ)*(m_points[i][2] - centerZ);
+	}
+
+	Matrix cov(3, 3);
+
+	cov(0, 0) = Cxx / n;
+	cov(0, 1) = Cxy / n;
+	cov(0, 2) = Cxz / n;
+
+	cov(1, 0) = cov(0, 1);
+	cov(1, 1) = Cyy / n;
+	cov(1, 2) = Cyz / n;
+
+	cov(2, 0) = cov(0, 2);
+	cov(2, 1) = cov(1, 2);
+	cov(2, 2) = Czz / n;
+
+	SVD::computeSymmetricEigenvectors(cov);
+
+	Point3d EV0(cov(0, 0), cov(1, 0), cov(2, 0));
+
+	normalizeVector(EV0);
+
+	Point3d C(centerX, centerY, centerZ);
+
+	double maxDistEV0 = std::numeric_limits<double>::lowest();
+	double minDistEV0 = std::numeric_limits<double>::max();
+
+	for (std::size_t i = 0; i < m_points.size(); ++i)
+	{
+		double dist = dotProduct(EV0, m_points[i] - C);
+		maxDistEV0 = dist > maxDistEV0 ? dist : maxDistEV0;
+		minDistEV0 = dist < minDistEV0 ? dist : minDistEV0;
+	}
+	std::vector<Point3d> line;
+	line.push_back(C + EV0*minDistEV0);
+	line.push_back(C + EV0*maxDistEV0);
+
+	return line;
 }
