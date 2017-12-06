@@ -33,6 +33,11 @@ struct Node
  * to the coordiante axis to subdivide the space.
  * It can be used to determine points within a given range or nearest neighbors
  * efficiently.
+ *
+ * @code{.cpp}
+ * loadFileXYZ(filenames.front().toLocal8Bit(), points);
+ * kdTree = KDTree::buildKDTree(points.data(), points.data() + points.size(), 0);
+ * @endcode
  */
 struct KDTree
 {
