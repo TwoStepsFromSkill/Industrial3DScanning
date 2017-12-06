@@ -76,6 +76,20 @@ private:
 	void computeAndVisualizeSmoothing();
 	void computeAndVisualizeThinning();
 
+	std::vector<Point3d> smoothPointsAverage(const std::vector<Point3d>& points, Node* rootNode, double radius);
+	/**
+	* @brief smoothPointsGaussian is a function that smoothes the points with an gaussian kernel
+	in a spherical neighborhood
+		* @details  The distance between \f$p` =  \frac{1}{\sum w}\cdot \sum (w_{i}\cdot n_{i})\f$
+\f$w_{i} = e^{\frac{-d_{i}}{r}}	\f$
+\f$d_{i} = (\sqrt{(p - n_{i})^2})^2\f$.
+	* @param points is a vector which contains all given points
+	* @param rootNode is a 3dTree which contains all given points in a sorted order
+	* @param radius defines the range for the spherical neighboorhood search
+	* @return is a vector which contains all smoothed points
+	*/
+	std::vector<Point3d> smoothPointsGaussian(const std::vector<Point3d>& points, Node* rootNode, double radius);
+
 	std::vector<Point3d> BestFitLine_elke();
 
 private slots:

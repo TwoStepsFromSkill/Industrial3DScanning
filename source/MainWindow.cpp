@@ -221,7 +221,7 @@ void MainWindow::loadFileXYZ(const char* filename, std::vector<Point3d>& points)
 
     while (file >> x >> y >> z)
     {
-        points.emplace_back(x, y, 0.0);
+        points.emplace_back(x, y, z);
     }
 
     file.close();
@@ -656,4 +656,57 @@ std::vector<Point3d> MainWindow::BestFitLine_elke()
 	line.push_back(C + EV0*maxDistEV0);
 
 	return line;
+}
+std::vector<Point3d> MainWindow::smoothPointsAverage(const std::vector<Point3d>& points,
+	Node* rootNode, double radius)
+{
+	std::vector<Point3d> smoothedPoints;
+	smoothedPoints.resize(points.size());
+
+#pragma omp parallel for
+	for (int i = 0; i < points.size(); ++i)
+	{
+		const Point3d& point = points[i];
+
+		Point3d smoothedPointAv;
+		std::vector<Point3d> neighborPoints = queryRadius(rootNode, radius, point);
+
+		for (std::size_t j = 0; j < neighborPoints.size(); ++j)
+		{
+			smoothedPointAv += neighborPoints[j];
+		}
+
+		smoothedPointAv *= 1.0 / neighborPoints.size();
+		smoothedPoints[i] = smoothedPointAv;
+	}
+
+	return smoothedPoints;
+}
+std::vector<Point3d> MainWindow::smoothPointsGaussian(const std::vector<Point3d>& points,
+	Node* rootNode, double radius)
+{
+	std::vector<Point3d> smoothedPoints;
+	smoothedPoints.resize(points.size());
+
+#pragma omp parallel for
+	for (int i = 0; i < points.size(); ++i)
+	{
+		const Point3d& point = points[i];
+
+		Point3d smoothedPointSum;
+		std::vector<Point3d> neighborPoints = queryRadius(rootNode, radius, point);
+		double sumWeights = 0;
+
+		for (std::size_t j = 0; j < neighborPoints.size(); ++j)
+		{
+			double distance = sqDistance3d(point, neighborPoints[j]);
+			double weight = std::exp((-distance) / radius);
+			smoothedPointSum += (neighborPoints[j] * weight);
+			sumWeights += weight;
+		}
+		if (sumWeights != 0)
+			smoothedPoints[i] = smoothedPointSum * (1 / sumWeights);
+	}
+
+	return smoothedPoints;
 }
