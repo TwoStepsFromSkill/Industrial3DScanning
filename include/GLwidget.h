@@ -46,7 +46,7 @@ public:
     void setTempPoint(const Point3d& p) { m_tempPoint = p; }
     void setTempRadiusPoints(const std::vector<Point3d>& pts) { m_tempRadiusPoints = pts; }
 
-    void drawingMainPointWithColorArray(bool val)
+    void drawingMainCloudPointWithColorArray(bool val)
     {
         m_drawMainPointCloudWithColorArray = val;
 
@@ -100,9 +100,9 @@ private:
     void loadDrawSettings();
     void writeSettings();
 
-    void  mousePressEvent(QMouseEvent * e);
-    void  mouseMoveEvent (QMouseEvent * e);
-    void  wheelEvent     (QWheelEvent * e);
+    void mousePressEvent(QMouseEvent * e);
+    void mouseMoveEvent (QMouseEvent * e);
+    void wheelEvent     (QWheelEvent * e);
 
     void drawBox();             ///< draws a unit box
     void drawCircle();          ///< draws a unit circle
