@@ -125,7 +125,8 @@ private slots:
 
     void applyBestFitPlane();
 
-    std::tuple<Point3d, std::vector<Point3d>, std::vector<Point3d>> bestFitPlane_daniel();
+    std::tuple<Point3d, std::vector<Point3d>, std::vector<Point3d>,
+               std::vector<Point3d>> bestFitPlane_daniel();
 };
 
 #endif
