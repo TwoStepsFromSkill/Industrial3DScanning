@@ -6,7 +6,7 @@
 #include <vector>
 
 /**
- * @brief Node of a KDTree. 
+ * @brief Node of a KDTree.
  */
 struct Node
 {
@@ -26,8 +26,14 @@ struct Node
 	Point3d* ptrLastPoint;
 };
 /**
-*@image html 3dtree.png
-*/
+ * @brief Main KdTree class.
+ * @image html 3dtree.png
+ *
+ * A KdTree is a binary space partition tree that uses cuts that are parallel
+ * to the coordiante axis to subdivide the space.
+ * It can be used to determine points within a given range or nearest neighbors
+ * efficiently.
+ */
 struct KDTree
 {
     /**
