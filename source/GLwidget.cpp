@@ -69,7 +69,7 @@ void GLwidget::paintGL()
     //draws the scene background
     drawBackground();
 
-    //Draw pointclouds
+    ////Draw pointclouds
     if (!m_points.empty() && m_drawMainPointCloud)
     {
         glEnableClientState(GL_VERTEX_ARRAY);
@@ -163,7 +163,7 @@ void GLwidget::paintGL()
         glEnd();
     }
 
-    if (!m_smoothedPoints.empty() && m_drawSmoothedPoints)
+    if (false)//!m_smoothedPoints.empty() && m_drawSmoothedPoints)
     {
         glEnableClientState(GL_VERTEX_ARRAY);
 
@@ -241,8 +241,7 @@ void GLwidget::paintGL()
         {
             glVertex3d(m_bfpCorners[i][0], m_bfpCorners[i][1], m_bfpCorners[i][2]);
         }
-        glEnd();
-
+        glEnd();	
 		glPopAttrib();
 
         glColor4ub(129, 190, 255, 80);
