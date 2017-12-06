@@ -163,7 +163,7 @@ void GLwidget::paintGL()
         glEnd();
     }
 
-    if (false)//!m_smoothedPoints.empty() && m_drawSmoothedPoints)
+    if (!m_smoothedPoints.empty() && m_drawSmoothedPoints)
     {
         glEnableClientState(GL_VERTEX_ARRAY);
 
