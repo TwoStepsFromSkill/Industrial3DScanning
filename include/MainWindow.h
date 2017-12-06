@@ -81,7 +81,9 @@ private:
 	* @brief smoothPointsGaussian is a function that smoothes the points with an gaussian kernel
 	in a spherical neighborhood
 		* @details  The distance between \f$p` =  \frac{1}{\sum w}\cdot \sum (w_{i}\cdot n_{i})\f$
+
 \f$w_{i} = e^{\frac{-d_{i}}{r}}	\f$
+
 \f$d_{i} = (\sqrt{(p - n_{i})^2})^2\f$.
 	* @param points is a vector which contains all given points
 	* @param rootNode is a 3dTree which contains all given points in a sorted order
