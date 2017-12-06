@@ -41,3 +41,4 @@ build*
 *.kdev4
 html/
 latex/
+/source/drawSettings.ini
