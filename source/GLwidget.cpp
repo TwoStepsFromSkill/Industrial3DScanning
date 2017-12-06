@@ -270,6 +270,15 @@ void GLwidget::paintGL()
 			glVertex3d(m_bflPoints[i][0], m_bflPoints[i][1], m_bflPoints[i][2]);
 		}
 		glEnd();
+
+        glPointSize(8);
+        glBegin(GL_POINTS);
+        for (std::size_t i = 0; i < 2; ++i)
+        {
+            glVertex3d(m_bflPoints[i][0], m_bflPoints[i][1], m_bflPoints[i][2]);
+        }
+        glEnd();
+
 		glPopAttrib();
 	}
 
