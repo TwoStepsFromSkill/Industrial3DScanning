@@ -24,6 +24,7 @@ GLwidget::GLwidget(QWidget* parent)
     , m_rangeCenter()
     , m_rangeExtend()
     , m_drawBFP(false)
+    , m_drawBFL(false)
     , m_drawRangeQueryBox(false)
     , m_drawRangeQueryResult(false)
     , m_drawMainPointCloud(true)
@@ -241,17 +242,30 @@ void GLwidget::paintGL()
             glVertex3d(m_bfpCorners[i][0], m_bfpCorners[i][1], m_bfpCorners[i][2]);
         }
         glEnd();
-				
+
 		glPopAttrib();
+
+        glColor4ub(129, 190, 255, 80);
+        glBegin(GL_TRIANGLES);
+
+        glVertex3d(m_bfpCorners[0][0], m_bfpCorners[0][1], m_bfpCorners[0][2]);
+        glVertex3d(m_bfpCorners[1][0], m_bfpCorners[1][1], m_bfpCorners[1][2]);
+        glVertex3d(m_bfpCorners[2][0], m_bfpCorners[2][1], m_bfpCorners[2][2]);
+
+        glVertex3d(m_bfpCorners[2][0], m_bfpCorners[2][1], m_bfpCorners[2][2]);
+        glVertex3d(m_bfpCorners[3][0], m_bfpCorners[3][1], m_bfpCorners[3][2]);
+        glVertex3d(m_bfpCorners[0][0], m_bfpCorners[0][1], m_bfpCorners[0][2]);
+
+        glEnd();
     }
 
 	if (m_drawBFL)
 	{
 		glPushAttrib(GL_LINE_BIT);
-		glLineWidth(2);
-		glColor3f(0.0f, 0.0f, 1.0f);
+		glLineWidth(4);
+		glColor3f(79.0f / 255, 0.0f, 118.0f / 255);
 
-		glBegin(GL_LINE);
+		glBegin(GL_LINE_LOOP);
 		for (std::size_t i = 0; i < 2; ++i)
 		{
 			glVertex3d(m_bflPoints[i][0], m_bflPoints[i][1], m_bflPoints[i][2]);
@@ -857,7 +871,7 @@ void GLwidget::computeColorHeat(double min, double max)
 	const std::vector<std::array<unsigned char, 3>> lookup {{0,0,0},
 															{255,0,0},
 															{255,255,0},
-															{255,255,255}} ;	
+															{255,255,255}} ;
 
     const double spacing = 1.0 / (lookup.size() - 1);
 
@@ -882,9 +896,9 @@ void GLwidget::computeColorHeat(double min, double max)
 
 void GLwidget::computeColorDiverge(double min, double max)
 {
-    const std::vector<std::array<unsigned char, 3>> lookup {{255,0,0},
-                                                            {255,255,255},
-                                                            {0,255,0}};
+    const std::vector<std::array<unsigned char, 3>> lookup {{142, 1, 82},
+                                                            {247, 247, 247},
+                                                            {39, 100, 25}};
 
 #pragma omp parallel for
     for (int i = 0; i < m_distances.size(); ++i)
