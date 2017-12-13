@@ -12,6 +12,7 @@ namespace SVD
 {
   void decomposeMatrix (Matrix& U, std::vector<double>& S, Matrix& V);  ///< computes the SV decomposition
   void computeSymmetricEigenvectors(Matrix& U); ///< computes the Eigenvectors for a symmetric square Matrix with SVD
+  void solveLinearEquationSystem(Matrix& A, std::vector<double>& x, const std::vector<double>& b);
 
   /** @brief returns the square of a value.
       @param v  values
