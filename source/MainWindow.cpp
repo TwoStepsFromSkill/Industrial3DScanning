@@ -151,9 +151,17 @@ MainWindow::MainWindow()
     connect(this, SIGNAL(drawingMainPointCloudChanged(bool)), m_glWidget, SLOT(drawingMainPointCloudChange(bool)));
     connect(this, SIGNAL(drawingTemporaryChanged(bool)), m_glWidget, SLOT(drawingTemporaryChange(bool)));
 
+    // Best Fit Line
+    connect(m_bestFitLineWidget, SIGNAL(applyPressed()), this, SLOT(applyBestFitLine()));
+    connect(this, SIGNAL(drawingBestFitLineChange(bool)), m_glWidget, SLOT(drawingBestFitLineChanged(bool)));
+
     // Best Fit Plane
     connect(m_bestFitPlaneWidget, SIGNAL(applyPressed()), this, SLOT(applyBestFitPlane()));
     connect(this, SIGNAL(drawingBestFitPlaneChange(bool)), m_glWidget, SLOT(drawingBestFitPlaneChanged(bool)));
+
+    // Best Fit Sphere
+    connect(m_bestFitSphereWidget, SIGNAL(applyPressed()), this, SLOT(applyBestFitSphere()));
+    connect(this, SIGNAL(drawingBestFitSphereChange(bool)), m_glWidget, SLOT(drawingBestFitSphereChanged(bool)));
 }
 
 void MainWindow::openFile()
@@ -460,13 +468,36 @@ void MainWindow::computeAndVisualizeThinning()
     emit drawingThinnedPointsChange(true);
 }
 
+void MainWindow::applyBestFitLine()
+{
+    auto startTime = std::chrono::system_clock::now();
+    auto planeParts = bestFitPlane_daniel();
+
+
+    const Point3d& C = std::get<0>(planeParts);
+    const Point3d& EV0 = std::get<3>(planeParts)[0];
+    std::vector<double> distances(m_points.size());
+
+#pragma omp parallel for
+    for (int i = 0; i < m_points.size(); ++i)
+    {
+        distances[i] = vectorLength(crossProduct(m_points[i] - C, EV0));
+    }
+
+    duration_milli elapsed = std::chrono::system_clock::now() - startTime;
+    std::cerr << "Computed BF Line! Took [" << elapsed.count() << "ms]\n";
+
+    m_glWidget->setBFLPoints(std::get<2>(planeParts));
+    m_glWidget->setPointDistances(distances);
+    m_glWidget->drawingMainCloudPointWithColorArray(true);
+
+    emit drawingBestFitLineChange(true);
+}
 
 void MainWindow::applyBestFitPlane()
 {
     auto startTime = std::chrono::system_clock::now();
-        auto planeParts = bestFitPlane_daniel();
-	duration_milli elapsed = std::chrono::system_clock::now() - startTime;
-    std::cerr << "Computed BFP! Took [" << elapsed.count() << "ms]\n";
+    auto planeParts = bestFitPlane_daniel();
 
     const Point3d& C = std::get<0>(planeParts);
     const Point3d& EV2 = std::get<3>(planeParts)[2];
@@ -478,13 +509,43 @@ void MainWindow::applyBestFitPlane()
         distances[i] = dotProduct(EV2, m_points[i] - C);
     }
 
+    duration_milli elapsed = std::chrono::system_clock::now() - startTime;
+    std::cerr << "Computed BF Plane! Took [" << elapsed.count() << "ms]\n";
+
     m_glWidget->setBFPCorners(std::get<1>(planeParts));
     m_glWidget->setPointDistances(distances);
     m_glWidget->drawingMainCloudPointWithColorArray(true);
 
-	m_glWidget->setBFLPoints(std::get<2>(planeParts));
-
     emit drawingBestFitPlaneChange(true);
+}
+
+void MainWindow::applyBestFitSphere()
+{
+    auto startTime = std::chrono::system_clock::now();
+    auto sphereParts = bestFitSphere_elke();
+
+    const Point3d C(sphereParts[1], sphereParts[2], sphereParts[3]);
+    std::vector<double> distances(m_points.size());
+
+#pragma omp parallel for
+    for (int i = 0; i < m_points.size(); ++i)
+    {
+        distances[i] = vectorLength(m_points[i] - C) - sphereParts[0];
+    }
+
+    duration_milli elapsed = std::chrono::system_clock::now() - startTime;
+    std::cerr << "Computed BF Sphere! Took [" << elapsed.count() << "ms]\n";
+    m_glWidget->setPointDistances(distances);
+    m_glWidget->drawingMainCloudPointWithColorArray(true);
+
+    auto spherePoints = computeVisualSphere(C, 1.0);
+    m_glWidget->setBFSPoints(spherePoints);
+
+    std::cerr << "CENTER: " << C[0] << " " << C[1] << " " << C[2] << "\n";
+    std::cerr << "RADIUS: " << sphereParts[0] << "\n";
+    std::cerr << "POINTS: " << spherePoints.size() << "\n";
+
+    emit drawingBestFitSphereChange(true);
 }
 
 std::tuple<Point3d, std::vector<Point3d>, std::vector<Point3d>,
@@ -781,4 +842,73 @@ std::vector<Point3d> MainWindow::smoothPointsGaussian(const std::vector<Point3d>
 	}
 
 	return smoothedPoints;
+}
+
+template <typename T>
+inline std::vector<T> linspace(const T& start, const T& end, std::size_t number)
+{
+    std::vector<T> result(number);
+    result[0] = start;
+
+    const T& step = (end - start) / (number - 1);
+
+    for (std::size_t i = 1; i < number; ++i)
+    {
+        result[i] = result[i - 1] + step;
+    }
+
+    return result;
+}
+
+void sphereToCart(double az, double po, double r, double& x, double& y, double& z)
+{
+    x = r * std::sin(po) * std::cos(az);
+    y = r * std::sin(po) * std::sin(az);
+    z = r * std::cos(po);
+}
+
+std::vector<Point3d> MainWindow::computeVisualSphere(const Point3d& center,
+                                                     double r)
+{
+    std::vector<Point3d> result;
+    const auto polars = linspace(0.0, M_PI, 15);
+    const auto azimuths = linspace(0.0, 2.0 * M_PI, 15);
+
+    double x, y, z;
+
+    // Fix rotation around z and build top down rows
+    for (const auto az : azimuths)
+    {
+        sphereToCart(az, polars.front(), r, x, y, z);
+        result.emplace_back(center[0] + x, center[1] + y, center[2] + z);
+
+        for (std::size_t i = 1; i < polars.size() - 1; ++i)
+        {
+            sphereToCart(az, polars[i], r, x, y, z);
+            result.emplace_back(center[0] + x, center[1] + y, center[2] + z);
+            result.emplace_back(center[0] + x, center[1] + y, center[2] + z);
+        }
+
+        sphereToCart(az, polars.back(), r, x, y, z);
+        result.emplace_back(center[0] + x, center[1] + y, center[2] + z);
+    }
+
+    // Fix xy plane and rotate around z
+    for (std::size_t po = 1; po < polars.size() - 1; ++po)
+    {
+        sphereToCart(azimuths.front(), polars[po], r, x, y, z);
+        result.emplace_back(center[0] + x, center[1] + y, center[2] + z);
+
+        for (std::size_t i = 1; i < azimuths.size(); ++i)
+        {
+            sphereToCart(azimuths[i], polars[po], r, x, y, z);
+            result.emplace_back(center[0] + x, center[1] + y, center[2] + z);
+            result.emplace_back(center[0] + x, center[1] + y, center[2] + z);
+        }
+
+        sphereToCart(azimuths.front(), polars[po], r, x, y, z);
+        result.emplace_back(center[0] + x, center[1] + y, center[2] + z);
+    }
+
+    return result;
 }

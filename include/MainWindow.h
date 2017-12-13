@@ -68,7 +68,9 @@ signals:
     void drawingSmoothedPointsChange(bool);
     void drawingThinnedPointsChange(bool);
 
+    void drawingBestFitLineChange(bool);
     void drawingBestFitPlaneChange(bool);
+    void drawingBestFitSphereChange(bool);
 
 private:
     void loadFileXYZ(const char* filename, std::vector<Point3d>& points);
@@ -129,12 +131,16 @@ private slots:
     void smoothTmpPointChanged(int);
     void thinTmpPointChanged(int);
 
+    void applyBestFitLine();
     void applyBestFitPlane();
+    void applyBestFitSphere();
 
     std::tuple<Point3d, std::vector<Point3d>, std::vector<Point3d>,
                std::vector<Point3d>> bestFitPlane_daniel();
 
 	std::vector<double> bestFitSphere_elke();
+
+    std::vector<Point3d> computeVisualSphere(const Point3d& center, double r);
 };
 
 #endif
