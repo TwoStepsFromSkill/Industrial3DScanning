@@ -12,5 +12,7 @@ set(HEADER
     ${CMAKE_CURRENT_SOURCE_DIR}/ThinningWidget.h
     ${CMAKE_CURRENT_SOURCE_DIR}/Matrix.h
     ${CMAKE_CURRENT_SOURCE_DIR}/SVD.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/BestFitLineWidget.h
     ${CMAKE_CURRENT_SOURCE_DIR}/BestFitPlaneWidget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/BestFitSphereWidget.h
     PARENT_SCOPE)

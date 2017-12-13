@@ -11,5 +11,7 @@ set(SOURCE
     ${CMAKE_CURRENT_SOURCE_DIR}/SmoothingWidget.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ThinngingWidget.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/SVD.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/BestFitLineWidget.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/BestFitPlaneWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/BestFitSphereWidget.cpp
     PARENT_SCOPE)

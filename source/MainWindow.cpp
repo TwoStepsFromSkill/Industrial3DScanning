@@ -23,7 +23,9 @@
 #include "SmoothingWidget.h"
 #include "ThinningWidget.h"
 #include "KDTree.h"
+#include "BestFitLineWidget.h"
 #include "BestFitPlaneWidget.h"
+#include "BestFitSphereWidget.h"
 #include "Matrix.h"
 #include "SVD.h"
 
@@ -61,8 +63,14 @@ MainWindow::MainWindow()
     m_thinningWidget = new ThinningWidget(this);
     m_tabWidget->addTab(m_thinningWidget, QString("Thinning"));
 
+    m_bestFitLineWidget = new BestFitLineWidget(this);
+    m_tabWidget->addTab(m_bestFitLineWidget, QString("BF Line"));
+
     m_bestFitPlaneWidget = new BestFitPlaneWidget(this);
-    m_tabWidget->addTab(m_bestFitPlaneWidget, QString("Best Fit Plane"));
+    m_tabWidget->addTab(m_bestFitPlaneWidget, QString("BF Plane"));
+
+    m_bestFitSphereWidget = new BestFitSphereWidget(this);
+    m_tabWidget->addTab(m_bestFitSphereWidget, QString("BF Sphere"));
 
     m_mainLayout->addWidget(m_tabWidget);
 
@@ -684,12 +692,12 @@ std::vector<double> MainWindow::bestFitSphere_elke()
 	}
 
 	double r0 = sqrt((1 / m_points.size())*quadricDist);
-	std::vector<double> x(4);	
+	std::vector<double> x(4);
 
 	const int maxNumberOfIterations = 100;
-	
+
 	for (int k = 1; k < maxNumberOfIterations; k++)
-	{		
+	{
 		std::vector<double> distances(m_points.size());
 		// initalize jacobi matrix with rows for all points and columns for the 4 parameters
 		Matrix jacobi(m_points.size(), 4);
@@ -702,11 +710,11 @@ std::vector<double> MainWindow::bestFitSphere_elke()
 			jacobi(i, 3) = -((m_points[i][2] - X0[2]) / distance3d(m_points[i], X0));
 		}
 		// jacobi matrix = A, distances = b, we want to calculate new parameters which are in x
-		
+
 		SVD::solveLinearEquationSystem(jacobi, x, distances);
 		X0 +=Point3d(x[1], x[2], x[3]);
 		r0 +=x[0];
-		
+
 		double parameterChange = sqrt(pow(2, x[0]) + pow(2, x[1]) + pow(2, x[2]) + pow(2, x[3]));
 		// stop if there is no significantly change of the parameters
 		if (parameterChange < 1.0e-6)

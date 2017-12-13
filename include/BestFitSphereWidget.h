@@ -1,5 +1,5 @@
-#ifndef BEST_FIT_PLANE_WIDGET_H
-#define BEST_FIT_PLANE_WIDGET_H
+#ifndef BEST_FIT_SPHERE_WIDGET_H
+#define BEST_FIT_SPHERE_WIDGET_H
 
 #include "BaseTabWidget.h"
 
@@ -8,10 +8,10 @@ class QPushButton;
 class QGroupBox;
 
 /**
- * @brief Widget that provides a button to start the best plane fit
+ * @brief Widget that provides a button to start the best plane sphere
  * algorithm.
  */
-class BestFitPlaneWidget : public BaseTabWidget
+class BestFitSphereWidget : public BaseTabWidget
 {
     Q_OBJECT
 public:
@@ -19,14 +19,14 @@ public:
      * @brief Constructor.
      * @param parent Pointer to the parent element. (nullptr by default)
      */
-    BestFitPlaneWidget(QWidget* parent = nullptr);
+    BestFitSphereWidget(QWidget* parent = nullptr);
 
     /**
      * @brief Destructor.
      * @note Needs to be virtual since we are in a base class of an abstract
      *          class.
      */
-    virtual ~BestFitPlaneWidget() {}
+    virtual ~BestFitSphereWidget() {}
 
     /**
      * @brief Deactivate the widget components.
@@ -56,4 +56,4 @@ private:
     QPushButton* m_buttonApply;
 };
 
-#endif // BEST_FIT_PLANE_WIDGET_H
+#endif // BEST_FIT_SPHERE_WIDGET_H

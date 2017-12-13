@@ -14,7 +14,9 @@ class RangeQueryWidget;
 class NearestNeighborWidget;
 class SmoothingWidget;
 class ThinningWidget;
+class BestFitLineWidget;
 class BestFitPlaneWidget;
+class BestFitSphereWidget;
 
 class MainWindow : public QMainWindow
 {
@@ -42,7 +44,9 @@ private:
 
     ThinningWidget* m_thinningWidget;
 
+    BestFitLineWidget* m_bestFitLineWidget;
     BestFitPlaneWidget* m_bestFitPlaneWidget;
+    BestFitSphereWidget* m_bestFitSphereWidget;
 
     std::vector<Point3d> m_points;
     Node* m_kdTree;
