@@ -656,6 +656,71 @@ std::vector<Point3d> MainWindow::BestFitLine_elke()
 
 	return line;
 }
+
+std::vector<double> MainWindow::bestFitSphere_elke()
+{
+	// Computer center (mean)
+	double centerX = 0;
+	double centerY = 0;
+	double centerZ = 0;
+
+#pragma omp parallel for reduction(+:centerX,centerY,centerZ)
+	for (int i = 0; i < m_points.size(); ++i)
+	{
+		centerX += m_points[i][0];
+		centerY += m_points[i][1];
+		centerZ += m_points[i][2];
+	}
+	centerX /= m_points.size();
+	centerY /= m_points.size();
+	centerZ /= m_points.size();
+
+	Point3d X0 = Point3d(centerX, centerY, centerZ);
+	double quadricDist = 0;
+
+	for (int i = 0; i < m_points.size(); ++i)
+	{
+		quadricDist += sqDistance3d(m_points[i], X0);
+	}
+
+	double r0 = sqrt((1 / m_points.size())*quadricDist);
+	std::vector<double> x(4);	
+
+	const int maxNumberOfIterations = 100;
+	
+	for (int k = 1; k < maxNumberOfIterations; k++)
+	{		
+		std::vector<double> distances(m_points.size());
+		// initalize jacobi matrix with rows for all points and columns for the 4 parameters
+		Matrix jacobi(m_points.size(), 4);
+		for (int i = 0; i < m_points.size(); ++i)
+		{
+			distances.push_back(distance3d(m_points[i], X0) - r0);
+			jacobi(i, 0) = -1;
+			jacobi(i, 1) = -((m_points[i][0]-X0[0])/ distance3d(m_points[i], X0));
+			jacobi(i, 2) = -((m_points[i][1] - X0[1]) / distance3d(m_points[i], X0));
+			jacobi(i, 3) = -((m_points[i][2] - X0[2]) / distance3d(m_points[i], X0));
+		}
+		// jacobi matrix = A, distances = b, we want to calculate new parameters which are in x
+		
+		SVD::solveLinearEquationSystem(jacobi, x, distances);
+		X0 +=Point3d(x[1], x[2], x[3]);
+		r0 +=x[0];
+		
+		double parameterChange = sqrt(pow(2, x[0]) + pow(2, x[1]) + pow(2, x[2]) + pow(2, x[3]));
+		// stop if there is no significantly change of the parameters
+		if (parameterChange < 1.0e-6)
+		{
+			return x;
+		}
+		// stop if standard deviation of th distances is small or does not change
+		// QUESTION: Is r0 the standard deviation?
+		else if (r0 <1.0e-6)
+			return x;
+	}
+	return x;
+}
+
 std::vector<Point3d> MainWindow::smoothPointsAverage(const std::vector<Point3d>& points,
 	Node* rootNode, double radius)
 {

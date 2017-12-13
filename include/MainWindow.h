@@ -129,6 +129,8 @@ private slots:
 
     std::tuple<Point3d, std::vector<Point3d>, std::vector<Point3d>,
                std::vector<Point3d>> bestFitPlane_daniel();
+
+	std::vector<double> bestFitSphere_elke();
 };
 
 #endif
