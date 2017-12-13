@@ -43,6 +43,8 @@ public:
 
 	void setBFLPoints(const std::vector<Point3d>& points) { m_bflPoints = points; }
 
+	void setBFSPoints(const std::vector<Point3d>& points) { m_spherePoints = points; }
+
     void setTempPoint(const Point3d& p) { m_tempPoint = p; }
     void setTempRadiusPoints(const std::vector<Point3d>& pts) { m_tempRadiusPoints = pts; }
 
@@ -94,7 +96,9 @@ public slots:
     // Thinned points
     void drawingThinnedPointsChanged(bool value);
 
+    void drawingBestFitLineChanged(bool value);
     void drawingBestFitPlaneChanged(bool value);
+    void drawingBestFitSphereChanged(bool value);
 
 private:
     void loadDrawSettings();
@@ -129,6 +133,9 @@ private:
 
 	std::vector<Point3d> m_bflPoints;
 	bool m_drawBFL;
+
+    std::vector<Point3d> m_spherePoints;
+    bool m_drawBFS;
 
     Point3d m_tempPoint;
     std::vector<Point3d> m_tempRadiusPoints;

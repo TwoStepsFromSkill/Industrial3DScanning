@@ -25,6 +25,7 @@ GLwidget::GLwidget(QWidget* parent)
     , m_rangeExtend()
     , m_drawBFP(false)
     , m_drawBFL(false)
+    , m_drawBFS(false)
     , m_drawRangeQueryBox(false)
     , m_drawRangeQueryResult(false)
     , m_drawMainPointCloud(true)
@@ -222,43 +223,7 @@ void GLwidget::paintGL()
         }
     }
 
-    if (m_drawBFP)
-    {
-        glPushAttrib(GL_LINE_BIT);
-        glLineWidth(2);
-        glColor3f(0.0f, 1.0f, 0.0f);
-
-        glBegin(GL_LINE_LOOP);
-        for (std::size_t i = 0; i < 4; ++i)
-        {
-            glVertex3d(m_bfpCorners[i][0], m_bfpCorners[i][1], m_bfpCorners[i][2]);
-        }
-        glEnd();
-
-        glPointSize(8);
-        glBegin(GL_POINTS);
-        for (std::size_t i = 0; i < 4; ++i)
-        {
-            glVertex3d(m_bfpCorners[i][0], m_bfpCorners[i][1], m_bfpCorners[i][2]);
-        }
-        glEnd();	
-		glPopAttrib();
-
-        glColor4ub(129, 190, 255, 80);
-        glBegin(GL_TRIANGLES);
-
-        glVertex3d(m_bfpCorners[0][0], m_bfpCorners[0][1], m_bfpCorners[0][2]);
-        glVertex3d(m_bfpCorners[1][0], m_bfpCorners[1][1], m_bfpCorners[1][2]);
-        glVertex3d(m_bfpCorners[2][0], m_bfpCorners[2][1], m_bfpCorners[2][2]);
-
-        glVertex3d(m_bfpCorners[2][0], m_bfpCorners[2][1], m_bfpCorners[2][2]);
-        glVertex3d(m_bfpCorners[3][0], m_bfpCorners[3][1], m_bfpCorners[3][2]);
-        glVertex3d(m_bfpCorners[0][0], m_bfpCorners[0][1], m_bfpCorners[0][2]);
-
-        glEnd();
-    }
-
-	if (m_drawBFL)
+    if (m_drawBFL && !m_bflPoints.empty())
 	{
 		glPushAttrib(GL_LINE_BIT);
 		glLineWidth(4);
@@ -281,6 +246,51 @@ void GLwidget::paintGL()
 
 		glPopAttrib();
 	}
+
+    if (m_drawBFP && !m_bfpCorners.empty())
+    {
+        glPushAttrib(GL_LINE_BIT);
+        glLineWidth(2);
+        glColor3f(0.0f, 1.0f, 0.0f);
+
+        glBegin(GL_LINE_LOOP);
+        for (std::size_t i = 0; i < 4; ++i)
+        {
+            glVertex3d(m_bfpCorners[i][0], m_bfpCorners[i][1], m_bfpCorners[i][2]);
+        }
+        glEnd();
+
+        glPointSize(8);
+        glBegin(GL_POINTS);
+        for (std::size_t i = 0; i < 4; ++i)
+        {
+            glVertex3d(m_bfpCorners[i][0], m_bfpCorners[i][1], m_bfpCorners[i][2]);
+        }
+        glEnd();
+		glPopAttrib();
+
+        glColor4ub(129, 190, 255, 80);
+        glBegin(GL_TRIANGLES);
+
+        glVertex3d(m_bfpCorners[0][0], m_bfpCorners[0][1], m_bfpCorners[0][2]);
+        glVertex3d(m_bfpCorners[1][0], m_bfpCorners[1][1], m_bfpCorners[1][2]);
+        glVertex3d(m_bfpCorners[2][0], m_bfpCorners[2][1], m_bfpCorners[2][2]);
+
+        glVertex3d(m_bfpCorners[2][0], m_bfpCorners[2][1], m_bfpCorners[2][2]);
+        glVertex3d(m_bfpCorners[3][0], m_bfpCorners[3][1], m_bfpCorners[3][2]);
+        glVertex3d(m_bfpCorners[0][0], m_bfpCorners[0][1], m_bfpCorners[0][2]);
+
+        glEnd();
+    }
+
+    if (m_drawBFS && !m_spherePoints.empty())
+    {
+        glEnableClientState(GL_VERTEX_ARRAY);
+        glColor3ub(0, 255, 255);
+        glVertexPointer(3, GL_DOUBLE, sizeof(Point3d), &m_spherePoints[0]);
+        glDrawArrays(GL_LINES, 0, (unsigned int) m_spherePoints.size());
+        glDisableClientState(GL_VERTEX_ARRAY);
+    }
 
     //draw coordinate frame
     drawCoordinateAxes();
@@ -459,10 +469,27 @@ void GLwidget::drawingThinnedPointsChanged(bool value)
     this->update();
 }
 
+void GLwidget::drawingBestFitLineChanged(bool value)
+{
+    m_drawBFP = false;
+	m_drawBFL = value;
+    m_drawBFS = false;
+    this->update();
+}
+
 void GLwidget::drawingBestFitPlaneChanged(bool value)
 {
     m_drawBFP = value;
-	m_drawBFL = value;
+	m_drawBFL = false;
+    m_drawBFS = false;
+    this->update();
+}
+
+void GLwidget::drawingBestFitSphereChanged(bool value)
+{
+    m_drawBFP = false;
+	m_drawBFL = false;
+    m_drawBFS = true;
     this->update();
 }
 
