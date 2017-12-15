@@ -484,6 +484,8 @@ void MainWindow::applyBestFitPlane()
 
 	m_glWidget->setBFLPoints(std::get<2>(planeParts));
 
+
+	std::vector<double> test = bestFitSphere_elke();
     emit drawingBestFitPlaneChange(true);
 }
 
@@ -691,11 +693,11 @@ std::vector<double> MainWindow::bestFitSphere_elke()
 		quadricDist += sqDistance3d(m_points[i], X0);
 	}
 
-	double r0 = sqrt((1 / m_points.size())*quadricDist);
+	double r0 = sqrt((1.0 / m_points.size())*quadricDist);
 	std::vector<double> x(4);
 
 	const int maxNumberOfIterations = 100;
-
+	std::vector<double> returnValues(4);
 	for (int k = 1; k < maxNumberOfIterations; k++)
 	{
 		std::vector<double> distances(m_points.size());
@@ -703,30 +705,34 @@ std::vector<double> MainWindow::bestFitSphere_elke()
 		Matrix jacobi(m_points.size(), 4);
 		for (int i = 0; i < m_points.size(); ++i)
 		{
-			distances.push_back(distance3d(m_points[i], X0) - r0);
+			double d = distance3d(m_points[i], X0);
+			distances[i] = -(d - r0);
 			jacobi(i, 0) = -1;
-			jacobi(i, 1) = -((m_points[i][0]-X0[0])/ distance3d(m_points[i], X0));
-			jacobi(i, 2) = -((m_points[i][1] - X0[1]) / distance3d(m_points[i], X0));
-			jacobi(i, 3) = -((m_points[i][2] - X0[2]) / distance3d(m_points[i], X0));
+			jacobi(i, 1) = -((m_points[i][0]-X0[0])/ d);
+			jacobi(i, 2) = -((m_points[i][1] - X0[1]) / d);
+			jacobi(i, 3) = -((m_points[i][2] - X0[2]) / d);
 		}
 		// jacobi matrix = A, distances = b, we want to calculate new parameters which are in x
-
 		SVD::solveLinearEquationSystem(jacobi, x, distances);
 		X0 +=Point3d(x[1], x[2], x[3]);
 		r0 +=x[0];
-
-		double parameterChange = sqrt(pow(2, x[0]) + pow(2, x[1]) + pow(2, x[2]) + pow(2, x[3]));
+		
+		returnValues[0] = X0[0];
+		returnValues[1] = X0[1];
+		returnValues[2] = X0[2];
+		returnValues[3] = r0;
+		double parameterChange = sqrt(pow(x[0],2) + pow(x[1],2) + pow(x[2],2) + pow(x[3],2));
 		// stop if there is no significantly change of the parameters
 		if (parameterChange < 1.0e-6)
 		{
-			return x;
+			return returnValues;
 		}
 		// stop if standard deviation of th distances is small or does not change
 		// QUESTION: Is r0 the standard deviation?
-		else if (r0 <1.0e-6)
-			return x;
+		else if (r0 < 1.0e-6)
+			return returnValues;
 	}
-	return x;
+	return returnValues;
 }
 
 std::vector<Point3d> MainWindow::smoothPointsAverage(const std::vector<Point3d>& points,
