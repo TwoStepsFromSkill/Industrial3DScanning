@@ -524,13 +524,13 @@ void MainWindow::applyBestFitSphere()
     auto startTime = std::chrono::system_clock::now();
     auto sphereParts = bestFitSphere_elke();
 
-    const Point3d C(sphereParts[1], sphereParts[2], sphereParts[3]);
+    const Point3d C(sphereParts[0], sphereParts[1], sphereParts[2]);
     std::vector<double> distances(m_points.size());
 
 #pragma omp parallel for
     for (int i = 0; i < m_points.size(); ++i)
     {
-        distances[i] = vectorLength(m_points[i] - C) - sphereParts[0];
+        distances[i] = vectorLength(m_points[i] - C) - sphereParts[3];
     }
 
     duration_milli elapsed = std::chrono::system_clock::now() - startTime;
@@ -538,12 +538,11 @@ void MainWindow::applyBestFitSphere()
     m_glWidget->setPointDistances(distances);
     m_glWidget->drawingMainCloudPointWithColorArray(true);
 
-    auto spherePoints = computeVisualSphere(C, 1.0);
+    auto spherePoints = computeVisualSphere(C, sphereParts[3]);
     m_glWidget->setBFSPoints(spherePoints);
 
     std::cerr << "CENTER: " << C[0] << " " << C[1] << " " << C[2] << "\n";
-    std::cerr << "RADIUS: " << sphereParts[0] << "\n";
-    std::cerr << "POINTS: " << spherePoints.size() << "\n";
+    std::cerr << "RADIUS: " << sphereParts[3] << "\n";
 
     emit drawingBestFitSphereChange(true);
 }
@@ -775,7 +774,7 @@ std::vector<double> MainWindow::bestFitSphere_elke()
 		SVD::solveLinearEquationSystem(jacobi, x, distances);
 		X0 +=Point3d(x[1], x[2], x[3]);
 		r0 +=x[0];
-		
+
 		returnValues[0] = X0[0];
 		returnValues[1] = X0[1];
 		returnValues[2] = X0[2];
