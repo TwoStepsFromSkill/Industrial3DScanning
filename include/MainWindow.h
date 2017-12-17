@@ -98,8 +98,6 @@ private:
 	*/
 	std::vector<Point3d> smoothPointsGaussian(const std::vector<Point3d>& points, Node* rootNode, double radius);
 
-	std::vector<Point3d> BestFitLine_elke();
-
 private slots:
     void openFile();
     void changeProjection();

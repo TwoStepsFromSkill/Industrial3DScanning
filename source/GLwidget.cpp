@@ -327,19 +327,19 @@ bool GLwidget::eventFilter(QObject *obj, QEvent *event)
                         m_drawSmoothedPoints = true;
                         break;
                     case 2:
-                        computeColorGrey(min, max);
+                        colorScaleToGrey();
                         m_drawMainPointCloud = false;
                         m_drawSmoothedPointCloudWithColorArray = true;
                         m_drawSmoothedPoints = true;
                         break;
                     case 3:
-                        computeColorRainbow(min, max);
+                        colorScaleToRainbow();
                         m_drawMainPointCloud = false;
                         m_drawSmoothedPointCloudWithColorArray = true;
                         m_drawSmoothedPoints = true;
                         break;
                     case 4:
-                        computeColorHeat(min, max);
+                        colorScaleToHeat();
                         m_drawMainPointCloud = false;
                         m_drawSmoothedPointCloudWithColorArray = true;
                         m_drawSmoothedPoints = true;
@@ -353,8 +353,8 @@ bool GLwidget::eventFilter(QObject *obj, QEvent *event)
             }
             else
             {
+                m_drawSmoothedPointCloudWithColorArray = !m_drawMainPointCloudWithColorArray;
                 m_drawMainPointCloud = !m_drawMainPointCloud;
-                m_drawSmoothedPointCloudWithColorArray = false;
             }
 
             this->update();

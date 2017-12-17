@@ -490,6 +490,7 @@ void MainWindow::applyBestFitLine()
     m_glWidget->setBFLPoints(std::get<2>(planeParts));
     m_glWidget->setPointDistances(distances);
     m_glWidget->drawingMainCloudPointWithColorArray(true);
+    m_glWidget->colorScaleToHeat();
 
     emit drawingBestFitLineChange(true);
 }
@@ -515,6 +516,7 @@ void MainWindow::applyBestFitPlane()
     m_glWidget->setBFPCorners(std::get<1>(planeParts));
     m_glWidget->setPointDistances(distances);
     m_glWidget->drawingMainCloudPointWithColorArray(true);
+    m_glWidget->colorScaleToDiverge();
 
     emit drawingBestFitPlaneChange(true);
 }
@@ -537,6 +539,7 @@ void MainWindow::applyBestFitSphere()
     std::cerr << "Computed BF Sphere! Took [" << elapsed.count() << "ms]\n";
     m_glWidget->setPointDistances(distances);
     m_glWidget->drawingMainCloudPointWithColorArray(true);
+    m_glWidget->colorScaleToDiverge();
 
     auto spherePoints = computeVisualSphere(C, sphereParts[3]);
     m_glWidget->setBFSPoints(spherePoints);
@@ -648,83 +651,6 @@ std::tuple<Point3d, std::vector<Point3d>, std::vector<Point3d>,
     return std::make_tuple(C, corners, lineEndings, evs);
 }
 
-std::vector<Point3d> MainWindow::BestFitLine_elke()
-{
-	// Computer center (mean)
-	double centerX = 0;
-	double centerY = 0;
-	double centerZ = 0;
-
-#pragma omp parallel for reduction(+:centerX,centerY,centerZ)
-	for (int i = 0; i < m_points.size(); ++i)
-	{
-		centerX += m_points[i][0];
-		centerY += m_points[i][1];
-		centerZ += m_points[i][2];
-	}
-
-	centerX /= m_points.size();
-	centerY /= m_points.size();
-	centerZ /= m_points.size();
-
-	// Compute covariance matrix
-	double Cxx = 0; double Cxy = 0; double Cxz = 0;
-	double Cyy = 0; double Cyz = 0;
-	double Czz = 0;
-
-	std::size_t n = m_points.size() - 1;
-
-#pragma omp parallel for reduction(+:centerX,centerY,centerZ)
-	for (int i = 0; i < m_points.size(); ++i)
-	{
-		Cxx += (m_points[i][0] - centerX)*(m_points[i][0] - centerX);
-		Cxy += (m_points[i][0] - centerX)*(m_points[i][1] - centerY);
-		Cxz += (m_points[i][0] - centerX)*(m_points[i][2] - centerZ);
-
-		Cyy += (m_points[i][1] - centerY)*(m_points[i][1] - centerY);
-		Cyz += (m_points[i][1] - centerY)*(m_points[i][2] - centerZ);
-
-		Czz += (m_points[i][2] - centerZ)*(m_points[i][2] - centerZ);
-	}
-
-	Matrix cov(3, 3);
-
-	cov(0, 0) = Cxx / n;
-	cov(0, 1) = Cxy / n;
-	cov(0, 2) = Cxz / n;
-
-	cov(1, 0) = cov(0, 1);
-	cov(1, 1) = Cyy / n;
-	cov(1, 2) = Cyz / n;
-
-	cov(2, 0) = cov(0, 2);
-	cov(2, 1) = cov(1, 2);
-	cov(2, 2) = Czz / n;
-
-	SVD::computeSymmetricEigenvectors(cov);
-
-	Point3d EV0(cov(0, 0), cov(1, 0), cov(2, 0));
-
-	normalizeVector(EV0);
-
-	Point3d C(centerX, centerY, centerZ);
-
-	double maxDistEV0 = std::numeric_limits<double>::lowest();
-	double minDistEV0 = std::numeric_limits<double>::max();
-
-	for (std::size_t i = 0; i < m_points.size(); ++i)
-	{
-		double dist = dotProduct(EV0, m_points[i] - C);
-		maxDistEV0 = dist > maxDistEV0 ? dist : maxDistEV0;
-		minDistEV0 = dist < minDistEV0 ? dist : minDistEV0;
-	}
-	std::vector<Point3d> line;
-	line.push_back(C + EV0*minDistEV0);
-	line.push_back(C + EV0*maxDistEV0);
-
-	return line;
-}
-
 std::vector<double> MainWindow::bestFitSphere_elke()
 {
 	// Computer center (mean)
@@ -758,6 +684,8 @@ std::vector<double> MainWindow::bestFitSphere_elke()
 	std::vector<double> returnValues(4);
 	for (int k = 1; k < maxNumberOfIterations; k++)
 	{
+        std::cerr << "Iteration " << k << "\n";
+
 		std::vector<double> distances(m_points.size());
 		// initalize jacobi matrix with rows for all points and columns for the 4 parameters
 		Matrix jacobi(m_points.size(), 4);

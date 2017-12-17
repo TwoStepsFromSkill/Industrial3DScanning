@@ -10,6 +10,14 @@
 #include "Point3d.h"
 #include "GLcamera.h"
 
+enum class ColorScale
+{
+    GREY,
+    RAINBOW,
+    HEAT,
+    DIVERGE
+};
+
 class GLwidget : public QOpenGLWidget
 {
     Q_OBJECT
@@ -51,14 +59,52 @@ public:
     void drawingMainCloudPointWithColorArray(bool val)
     {
         m_drawMainPointCloudWithColorArray = val;
+        updateColors();
+        this->update();
+    }
 
+    void updateColors()
+    {
         auto minmax = std::minmax_element(m_distances.begin(), m_distances.end());
         double min = *minmax.first;
         double max = *minmax.second;
 
-        computeColorDiverge(min, max);
+        switch (m_colorScale)
+        {
+            case ColorScale::GREY:
+                computeColorDiverge(min, max);
+                break;
+            case ColorScale::RAINBOW:
+                computeColorRainbow(min, max);
+                break;
+            case ColorScale::HEAT:
+                computeColorHeat(min, max);
+                break;
+            case ColorScale::DIVERGE:
+                computeColorDiverge(min, max);
+                break;
+        }
+    }
 
-        this->update();
+    void colorScaleToGrey()
+    {
+        m_colorScale = ColorScale::GREY;
+        updateColors();
+    }
+    void colorScaleToRainbow()
+    {
+        m_colorScale = ColorScale::RAINBOW;
+        updateColors();
+    }
+    void colorScaleToHeat()
+    {
+        m_colorScale = ColorScale::HEAT;
+        updateColors();
+    }
+    void colorScaleToDiverge()
+   {
+        m_colorScale = ColorScale::DIVERGE;
+        updateColors();
     }
 
     void drawingSmoothedPointWithColorArray(bool val)
@@ -120,6 +166,8 @@ private:
     void computeColorRainbow(double min, double max);
     void computeColorHeat(double min, double max);
     void computeColorDiverge(double min, double max);
+
+    ColorScale m_colorScale;
 
     std::vector<Point3d> m_points;    //point data
     std::vector<unsigned char> m_pointColors;
