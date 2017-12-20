@@ -8,6 +8,83 @@ namespace SVD
 {
 
 //------------------------------------------------------------------------------
+/** @brief Solves a linear equation system using SVD.
+  @details Computes the solution vector \b x of the linear equation system \f$ A*x=b\f$.\n
+  Internally a Singular Value Decomposition is utilized which enables to exlude rows from
+  the solution space that are responsible for singular positions. The corresponding singular values 
+  can be seen as the weights for the influence of the rows in the equation systems. Weights close to zero
+  singular positions which means the parameter/row has no influence on the solution (but values close to 
+  zero lead to numerical problems so everything singular value that is close to zero is ignored for the solution.
+
+  SVD decomposes \b A in \b U,\b S,\b V. The solution vector \b x is then given by:\n
+  \f$ x=V*\left[diag(1/s_j)\right]*U^T*b \f$.
+
+  @param[in,out] A  matrix \b A of the linear equation system (gets replaced!)
+  @param[out]    x  solution vector \b x
+  @param[in]     b  vector \b b of the linear equation system
+  @note             matrix A gets replaced by the matrix U of the SVD!
+*/
+//------------------------------------------------------------------------------
+void solveLinearEquationSystem(Matrix& A, std::vector<double>& x, const std::vector<double>& b)
+{
+  const size_t M = A.M(); //number of rows (== number of equations)
+  const size_t N = A.N(); //numer of columns (== number of unknown variables that we want to compute)
+
+  x.resize(A.N());  //set the size of the solution vector
+
+  //prepare storage for SVD solver
+  std::vector<double> S; //vector of singular values from Singular Value Decomposition
+  Matrix V; //one of the resulting matrices from the SV decomposition (U*S*V^T)
+
+  //compute singular value decomposition
+  //Matrix A gets overriden / replaced by the matrix U of the SVD
+  decomposeMatrix(A, S, V);
+
+  /*******************************************************/
+  //The essential step of the SVD is to exclude singular positions, which are 
+  //close to zero from the solution by explicitely setting them to zero
+  double wmax = 0;
+  for (size_t i = 0; i<S.size(); ++i){
+    if (S[i] > wmax)wmax = S[i];
+  }
+  const double wmin = 0.5*std::sqrt(M + N + 1.0)*wmax*std::numeric_limits<double>::epsilon();
+
+  for (size_t i = 0; i<S.size(); ++i){
+    if (S[i] < wmin) S[i] = 0;
+  }
+  /*******************************************************/
+
+
+  /*******************************************************/
+  //Compute U^T*b divided by the weights(singular values) S[j]
+  std::vector<double> tmp(N);
+  for (size_t j=0; j<N; ++j)
+  {
+    tmp[j] = 0;     //initialize
+    if (S[j] == 0){ //ignore singular positions
+      continue;
+    }
+    
+    for (size_t i=0; i<M; ++i){
+      tmp[j] += A(i,j) * b[i];
+    }
+
+    tmp[j] /= S[j];
+  }
+
+  //Finally multiply temporary result with V
+  for (size_t j=0; j<N; ++j)
+  {
+    x[j] = 0;
+    for (size_t jj = 0; jj<N; ++jj)
+    {
+      x[j] += V(j, jj)*tmp[jj];
+    }
+  }
+  /*******************************************************/
+}
+
+//------------------------------------------------------------------------------
 /** @brief Computes the eigenvectors of symmetric square matrix with a SVD.
     @details  The singular values of a symmetric square matrix are the eigenvalues.
               Also, in this case the orthogonale matrices U and V are identical and 

@@ -10,6 +10,14 @@
 #include "Point3d.h"
 #include "GLcamera.h"
 
+enum class ColorScale
+{
+    GREY,
+    RAINBOW,
+    HEAT,
+    DIVERGE
+};
+
 class GLwidget : public QOpenGLWidget
 {
     Q_OBJECT
@@ -43,20 +51,60 @@ public:
 
 	void setBFLPoints(const std::vector<Point3d>& points) { m_bflPoints = points; }
 
+	void setBFSPoints(const std::vector<Point3d>& points) { m_spherePoints = points; }
+
     void setTempPoint(const Point3d& p) { m_tempPoint = p; }
     void setTempRadiusPoints(const std::vector<Point3d>& pts) { m_tempRadiusPoints = pts; }
 
     void drawingMainCloudPointWithColorArray(bool val)
     {
         m_drawMainPointCloudWithColorArray = val;
+        updateColors();
+        this->update();
+    }
 
+    void updateColors()
+    {
         auto minmax = std::minmax_element(m_distances.begin(), m_distances.end());
         double min = *minmax.first;
         double max = *minmax.second;
 
-        computeColorDiverge(min, max);
+        switch (m_colorScale)
+        {
+            case ColorScale::GREY:
+                computeColorDiverge(min, max);
+                break;
+            case ColorScale::RAINBOW:
+                computeColorRainbow(min, max);
+                break;
+            case ColorScale::HEAT:
+                computeColorHeat(min, max);
+                break;
+            case ColorScale::DIVERGE:
+                computeColorDiverge(min, max);
+                break;
+        }
+    }
 
-        this->update();
+    void colorScaleToGrey()
+    {
+        m_colorScale = ColorScale::GREY;
+        updateColors();
+    }
+    void colorScaleToRainbow()
+    {
+        m_colorScale = ColorScale::RAINBOW;
+        updateColors();
+    }
+    void colorScaleToHeat()
+    {
+        m_colorScale = ColorScale::HEAT;
+        updateColors();
+    }
+    void colorScaleToDiverge()
+   {
+        m_colorScale = ColorScale::DIVERGE;
+        updateColors();
     }
 
     void drawingSmoothedPointWithColorArray(bool val)
@@ -94,7 +142,9 @@ public slots:
     // Thinned points
     void drawingThinnedPointsChanged(bool value);
 
+    void drawingBestFitLineChanged(bool value);
     void drawingBestFitPlaneChanged(bool value);
+    void drawingBestFitSphereChanged(bool value);
 
 private:
     void loadDrawSettings();
@@ -117,6 +167,8 @@ private:
     void computeColorHeat(double min, double max);
     void computeColorDiverge(double min, double max);
 
+    ColorScale m_colorScale;
+
     std::vector<Point3d> m_points;    //point data
     std::vector<unsigned char> m_pointColors;
     std::vector<double> m_distances;
@@ -129,6 +181,9 @@ private:
 
 	std::vector<Point3d> m_bflPoints;
 	bool m_drawBFL;
+
+    std::vector<Point3d> m_spherePoints;
+    bool m_drawBFS;
 
     Point3d m_tempPoint;
     std::vector<Point3d> m_tempRadiusPoints;

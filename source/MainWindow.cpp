@@ -151,9 +151,17 @@ MainWindow::MainWindow()
     connect(this, SIGNAL(drawingMainPointCloudChanged(bool)), m_glWidget, SLOT(drawingMainPointCloudChange(bool)));
     connect(this, SIGNAL(drawingTemporaryChanged(bool)), m_glWidget, SLOT(drawingTemporaryChange(bool)));
 
+    // Best Fit Line
+    connect(m_bestFitLineWidget, SIGNAL(applyPressed()), this, SLOT(applyBestFitLine()));
+    connect(this, SIGNAL(drawingBestFitLineChange(bool)), m_glWidget, SLOT(drawingBestFitLineChanged(bool)));
+
     // Best Fit Plane
     connect(m_bestFitPlaneWidget, SIGNAL(applyPressed()), this, SLOT(applyBestFitPlane()));
     connect(this, SIGNAL(drawingBestFitPlaneChange(bool)), m_glWidget, SLOT(drawingBestFitPlaneChanged(bool)));
+
+    // Best Fit Sphere
+    connect(m_bestFitSphereWidget, SIGNAL(applyPressed()), this, SLOT(applyBestFitSphere()));
+    connect(this, SIGNAL(drawingBestFitSphereChange(bool)), m_glWidget, SLOT(drawingBestFitSphereChanged(bool)));
 }
 
 void MainWindow::openFile()
@@ -460,13 +468,37 @@ void MainWindow::computeAndVisualizeThinning()
     emit drawingThinnedPointsChange(true);
 }
 
+void MainWindow::applyBestFitLine()
+{
+    auto startTime = std::chrono::system_clock::now();
+    auto planeParts = bestFitPlane_daniel();
+
+
+    const Point3d& C = std::get<0>(planeParts);
+    const Point3d& EV0 = std::get<3>(planeParts)[0];
+    std::vector<double> distances(m_points.size());
+
+#pragma omp parallel for
+    for (int i = 0; i < m_points.size(); ++i)
+    {
+        distances[i] = vectorLength(crossProduct(m_points[i] - C, EV0));
+    }
+
+    duration_milli elapsed = std::chrono::system_clock::now() - startTime;
+    std::cerr << "Computed BF Line! Took [" << elapsed.count() << "ms]\n";
+
+    m_glWidget->setBFLPoints(std::get<2>(planeParts));
+    m_glWidget->setPointDistances(distances);
+    m_glWidget->drawingMainCloudPointWithColorArray(true);
+    m_glWidget->colorScaleToHeat();
+
+    emit drawingBestFitLineChange(true);
+}
 
 void MainWindow::applyBestFitPlane()
 {
     auto startTime = std::chrono::system_clock::now();
-        auto planeParts = bestFitPlane_daniel();
-	duration_milli elapsed = std::chrono::system_clock::now() - startTime;
-    std::cerr << "Computed BFP! Took [" << elapsed.count() << "ms]\n";
+    auto planeParts = bestFitPlane_daniel();
 
     const Point3d& C = std::get<0>(planeParts);
     const Point3d& EV2 = std::get<3>(planeParts)[2];
@@ -478,15 +510,44 @@ void MainWindow::applyBestFitPlane()
         distances[i] = dotProduct(EV2, m_points[i] - C);
     }
 
+    duration_milli elapsed = std::chrono::system_clock::now() - startTime;
+    std::cerr << "Computed BF Plane! Took [" << elapsed.count() << "ms]\n";
+
     m_glWidget->setBFPCorners(std::get<1>(planeParts));
     m_glWidget->setPointDistances(distances);
     m_glWidget->drawingMainCloudPointWithColorArray(true);
+    m_glWidget->colorScaleToDiverge();
 
-	m_glWidget->setBFLPoints(std::get<2>(planeParts));
-
-
-	std::vector<double> test = bestFitSphere_elke();
     emit drawingBestFitPlaneChange(true);
+}
+
+void MainWindow::applyBestFitSphere()
+{
+    auto startTime = std::chrono::system_clock::now();
+    auto sphereParts = bestFitSphere_elke();
+
+    const Point3d C(sphereParts[0], sphereParts[1], sphereParts[2]);
+    std::vector<double> distances(m_points.size());
+
+#pragma omp parallel for
+    for (int i = 0; i < m_points.size(); ++i)
+    {
+        distances[i] = vectorLength(m_points[i] - C) - sphereParts[3];
+    }
+
+    duration_milli elapsed = std::chrono::system_clock::now() - startTime;
+    std::cerr << "Computed BF Sphere! Took [" << elapsed.count() << "ms]\n";
+    m_glWidget->setPointDistances(distances);
+    m_glWidget->drawingMainCloudPointWithColorArray(true);
+    m_glWidget->colorScaleToDiverge();
+
+    auto spherePoints = computeVisualSphere(C, sphereParts[3]);
+    m_glWidget->setBFSPoints(spherePoints);
+
+    std::cerr << "CENTER: " << C[0] << " " << C[1] << " " << C[2] << "\n";
+    std::cerr << "RADIUS: " << sphereParts[3] << "\n";
+
+    emit drawingBestFitSphereChange(true);
 }
 
 std::tuple<Point3d, std::vector<Point3d>, std::vector<Point3d>,
@@ -590,83 +651,6 @@ std::tuple<Point3d, std::vector<Point3d>, std::vector<Point3d>,
     return std::make_tuple(C, corners, lineEndings, evs);
 }
 
-std::vector<Point3d> MainWindow::BestFitLine_elke()
-{
-	// Computer center (mean)
-	double centerX = 0;
-	double centerY = 0;
-	double centerZ = 0;
-
-#pragma omp parallel for reduction(+:centerX,centerY,centerZ)
-	for (int i = 0; i < m_points.size(); ++i)
-	{
-		centerX += m_points[i][0];
-		centerY += m_points[i][1];
-		centerZ += m_points[i][2];
-	}
-
-	centerX /= m_points.size();
-	centerY /= m_points.size();
-	centerZ /= m_points.size();
-
-	// Compute covariance matrix
-	double Cxx = 0; double Cxy = 0; double Cxz = 0;
-	double Cyy = 0; double Cyz = 0;
-	double Czz = 0;
-
-	std::size_t n = m_points.size() - 1;
-
-#pragma omp parallel for reduction(+:centerX,centerY,centerZ)
-	for (int i = 0; i < m_points.size(); ++i)
-	{
-		Cxx += (m_points[i][0] - centerX)*(m_points[i][0] - centerX);
-		Cxy += (m_points[i][0] - centerX)*(m_points[i][1] - centerY);
-		Cxz += (m_points[i][0] - centerX)*(m_points[i][2] - centerZ);
-
-		Cyy += (m_points[i][1] - centerY)*(m_points[i][1] - centerY);
-		Cyz += (m_points[i][1] - centerY)*(m_points[i][2] - centerZ);
-
-		Czz += (m_points[i][2] - centerZ)*(m_points[i][2] - centerZ);
-	}
-
-	Matrix cov(3, 3);
-
-	cov(0, 0) = Cxx / n;
-	cov(0, 1) = Cxy / n;
-	cov(0, 2) = Cxz / n;
-
-	cov(1, 0) = cov(0, 1);
-	cov(1, 1) = Cyy / n;
-	cov(1, 2) = Cyz / n;
-
-	cov(2, 0) = cov(0, 2);
-	cov(2, 1) = cov(1, 2);
-	cov(2, 2) = Czz / n;
-
-	SVD::computeSymmetricEigenvectors(cov);
-
-	Point3d EV0(cov(0, 0), cov(1, 0), cov(2, 0));
-
-	normalizeVector(EV0);
-
-	Point3d C(centerX, centerY, centerZ);
-
-	double maxDistEV0 = std::numeric_limits<double>::lowest();
-	double minDistEV0 = std::numeric_limits<double>::max();
-
-	for (std::size_t i = 0; i < m_points.size(); ++i)
-	{
-		double dist = dotProduct(EV0, m_points[i] - C);
-		maxDistEV0 = dist > maxDistEV0 ? dist : maxDistEV0;
-		minDistEV0 = dist < minDistEV0 ? dist : minDistEV0;
-	}
-	std::vector<Point3d> line;
-	line.push_back(C + EV0*minDistEV0);
-	line.push_back(C + EV0*maxDistEV0);
-
-	return line;
-}
-
 std::vector<double> MainWindow::bestFitSphere_elke()
 {
 	// Computer center (mean)
@@ -701,6 +685,8 @@ std::vector<double> MainWindow::bestFitSphere_elke()
 	std::vector<double> returnValues(4);
 	for (std::size_t k = 1; k < maxNumberOfIterations; k++)
 	{
+        std::cerr << "Iteration " << k << "\n";
+
 		std::vector<double> distances(m_points.size());
 		
 		// initalize jacobi matrix with rows for all points and columns for the 4 parameters
@@ -719,7 +705,7 @@ std::vector<double> MainWindow::bestFitSphere_elke()
 		SVD::solveLinearEquationSystem(Jacobi, x, distances);
 		X0 +=Point3d(x[1], x[2], x[3]);
 		r0 +=x[0];
-		
+
 		returnValues[0] = X0[0];
 		returnValues[1] = X0[1];
 		returnValues[2] = X0[2];
@@ -790,4 +776,73 @@ std::vector<Point3d> MainWindow::smoothPointsGaussian(const std::vector<Point3d>
 	}
 
 	return smoothedPoints;
+}
+
+template <typename T>
+inline std::vector<T> linspace(const T& start, const T& end, std::size_t number)
+{
+    std::vector<T> result(number);
+    result[0] = start;
+
+    const T& step = (end - start) / (number - 1);
+
+    for (std::size_t i = 1; i < number; ++i)
+    {
+        result[i] = result[i - 1] + step;
+    }
+
+    return result;
+}
+
+void sphereToCart(double az, double po, double r, double& x, double& y, double& z)
+{
+    x = r * std::sin(po) * std::cos(az);
+    y = r * std::sin(po) * std::sin(az);
+    z = r * std::cos(po);
+}
+
+std::vector<Point3d> MainWindow::computeVisualSphere(const Point3d& center,
+                                                     double r)
+{
+    std::vector<Point3d> result;
+    const auto polars = linspace(0.0, M_PI, 15);
+    const auto azimuths = linspace(0.0, 2.0 * M_PI, 15);
+
+    double x, y, z;
+
+    // Fix rotation around z and build top down rows
+    for (const auto az : azimuths)
+    {
+        sphereToCart(az, polars.front(), r, x, y, z);
+        result.emplace_back(center[0] + x, center[1] + y, center[2] + z);
+
+        for (std::size_t i = 1; i < polars.size() - 1; ++i)
+        {
+            sphereToCart(az, polars[i], r, x, y, z);
+            result.emplace_back(center[0] + x, center[1] + y, center[2] + z);
+            result.emplace_back(center[0] + x, center[1] + y, center[2] + z);
+        }
+
+        sphereToCart(az, polars.back(), r, x, y, z);
+        result.emplace_back(center[0] + x, center[1] + y, center[2] + z);
+    }
+
+    // Fix xy plane and rotate around z
+    for (std::size_t po = 1; po < polars.size() - 1; ++po)
+    {
+        sphereToCart(azimuths.front(), polars[po], r, x, y, z);
+        result.emplace_back(center[0] + x, center[1] + y, center[2] + z);
+
+        for (std::size_t i = 1; i < azimuths.size(); ++i)
+        {
+            sphereToCart(azimuths[i], polars[po], r, x, y, z);
+            result.emplace_back(center[0] + x, center[1] + y, center[2] + z);
+            result.emplace_back(center[0] + x, center[1] + y, center[2] + z);
+        }
+
+        sphereToCart(azimuths.front(), polars[po], r, x, y, z);
+        result.emplace_back(center[0] + x, center[1] + y, center[2] + z);
+    }
+
+    return result;
 }

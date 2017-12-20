@@ -509,6 +509,7 @@ std::vector<double> colorFromGradientHSV(double index)
 	return color;
 }
 
+
 //Thinning
 /**
 @brief	Thins a given pointcloud (stored in K-D-Tree) by a given radius.
@@ -545,26 +546,27 @@ void homogeneousThinning(Node* globalTree, Node* subTree, const double radius, s
 	}
 }
 
-//Best-Fit Plane
+
+//Best-Fit Line & Plane
 /**
 @brief	Computes centroid p of all given points.
 @param	given point cloud
 @return	a Point3d = centroid of point cloud
 */
-Point3d getCentroid(std::vector<Point3d> points)
+Point3d getCentroid(std::vector<Point3d>* points)
 {
-	Point3d result;
+	Point3d result = Point3d(0.0, 0.0, 0.0);
 
-	const int N = points.size();
+	const int N = points->size();
 
-	for each (Point3d pt in points)
+	for each (Point3d pt in *points)
 	{
 		result.x += pt.x;
 		result.y += pt.y;
 		result.z += pt.z;
 	}
 
-	result *= 1 / N;
+	result *= 1.0 / N;
 
 	return result;
 }
@@ -575,21 +577,23 @@ Point3d getCentroid(std::vector<Point3d> points)
 @param	centroid of given point cloud
 @return	covariance matrix of given point cloud
 */
-Matrix getCovarianceMatrix(std::vector<Point3d> points, Point3d centroid)
+Matrix getCovarianceMatrix(std::vector<Point3d>* points, Point3d centroid)
 {
-	const int N = points.size();
+	//initialize variables
+	int N = points->size();
 
 	double x_, y_, z_;
 
-	double	Mxx = 0, Mxy = 0, Mzx = 0, 
-			Myy = 0, Myz = 0,
-			Mzz = 0;
+	double	Mxx = 0.0, Mxy = 0.0, Mzx = 0.0, 
+			Myy = 0.0, Myz = 0.0,
+			Mzz = 0.0;
 
+	//calculate sums
 	for (size_t i = 0; i < N; i++)
 	{
-		x_ = points[i].x - centroid.x;
-		y_ = points[i].y - centroid.y;
-		z_ = points[i].z - centroid.z;
+		x_ = points->at(i).x - centroid.x;
+		y_ = points->at(i).y - centroid.y;
+		z_ = points->at(i).z - centroid.z;
 
 		Mxx += x_ * x_;
 		Mxy += x_ * y_;
@@ -599,8 +603,18 @@ Matrix getCovarianceMatrix(std::vector<Point3d> points, Point3d centroid)
 		Mzz += z_ * z_;
 	}
 
+	//divide by (number of points - 1)
+	N -= 1.0;
+
+	Mxx /= N;
+	Mxy /= N;
+	Mzx /= N;
+	Myy /= N;
+	Myz /= N;
+	Mzz /= N;
+
 	//create 3x3 output matrix
-	Matrix result = Matrix(3, 3);
+	Matrix result = Matrix(3.0, 3.0);
 
 	//fill matrix
 	result(0, 0) = Mxx; result(0, 1) = Mxy; result(0, 2) = Mzx;
@@ -611,21 +625,205 @@ Matrix getCovarianceMatrix(std::vector<Point3d> points, Point3d centroid)
 }
 
 /**
-@brief	Calculates the direction of the best-fit plane by SVD decomposition.
+@brief	Calculates the direction of the best-fit line & plane by SVD.
 @param	covariance matrix of given point cloud
-@return	direction of best-fit plane normal
+@param	point vector to store eigen vectors
+@return	direction vector of best-fit line (0) and plane (1)
 */
-Point3d getDirectionOfBestFitPlane(Matrix covariance)
+std::vector<Point3d> getDirectionsOfBestFit(Matrix covariance, std::vector<Point3d>* eigenVectorsOutput)
 {
+	//initialize variables
 	std::vector<double> S;
 
 	Matrix V;
 
 	SVD::decomposeMatrix(covariance, S, V);
 
-	Point3d result = Point3d(	covariance(0, 2),
-								covariance(1, 2),
-								covariance(2, 2));
+	//read eigen vectors from decomposed matrix
+	Point3d EV0(covariance(0, 0), covariance(1, 0), covariance(2, 0));
+	Point3d EV1(covariance(0, 1), covariance(1, 1), covariance(2, 1));
+	Point3d EV2(covariance(0, 2), covariance(1, 2), covariance(2, 2));
+	
+	//normalize eigen vectors
+	normalizeVector(EV0);
+	normalizeVector(EV1);
+	normalizeVector(EV2);
+
+	//store eigen vectors
+	eigenVectorsOutput->push_back(EV0);
+	eigenVectorsOutput->push_back(EV1);
+	eigenVectorsOutput->push_back(EV2);
+
+	//store direction of best-fit line
+	Point3d bfLineDirection = Point3d(	covariance(0, 0),
+										covariance(1, 0),
+										covariance(2, 0));
+
+	//store direction of best-fit plane
+	Point3d bfPlaneDirection = Point3d(	covariance(0, 2),
+										covariance(1, 2),
+										covariance(2, 2));
+
+	return { bfLineDirection, bfPlaneDirection };
+}
+
+/**
+@brief	Calculates the needed vertices to draw the best-fit line & plane.
+@param	given point cloud
+@param	center of given point cloud
+@param	eigenvectors of best-fit plane
+@return	vector with corner points of best-fit line & plane
+*/
+std::vector<Point3d> getCornersOfBestFit(std::vector<Point3d>* points, Point3d centroid, std::vector<Point3d>* eigenVectors)
+{
+	//initialize variables
+	std::vector<Point3d> result;
+
+	double minDist_EV0 = std::numeric_limits<double>::max();
+	double maxDist_EV0 = std::numeric_limits<double>::lowest();
+
+	double minDist_EV1 = std::numeric_limits<double>::max();
+	double maxDist_EV1 = std::numeric_limits<double>::lowest();
+
+	double distToPlane;
+
+	//calculate min. and max. distances
+	for each (Point3d pt in *points)
+	{
+		//calculate distance to plane (E1,E2)
+		distToPlane = dotProduct(eigenVectors->at(0), centroid - pt);
+
+		//check if current distance is new min/max distance
+		if (distToPlane < minDist_EV0)
+			minDist_EV0 = distToPlane;
+		else if (distToPlane > maxDist_EV0)
+			maxDist_EV0 = distToPlane;
+
+		//calculate distance to plane (E0,E2)
+		distToPlane = dotProduct(eigenVectors->at(1), centroid - pt);
+
+		//check if current distance is new min/max distance
+		if (distToPlane < minDist_EV1)
+			minDist_EV1 = distToPlane;
+		else if (distToPlane > maxDist_EV1)
+			maxDist_EV1 = distToPlane;
+	}
+
+	//fill output vector with corner points of best-fit plane
+	result.push_back(centroid + eigenVectors->at(0)*minDist_EV0 + eigenVectors->at(1)*minDist_EV1);
+	result.push_back(centroid + eigenVectors->at(0)*minDist_EV0 + eigenVectors->at(1)*maxDist_EV1);
+	result.push_back(centroid + eigenVectors->at(0)*maxDist_EV0 + eigenVectors->at(1)*maxDist_EV1);
+	result.push_back(centroid + eigenVectors->at(0)*maxDist_EV0 + eigenVectors->at(1)*minDist_EV1);
+
+	//fill output vector with points of best-fit line
+	result.push_back(centroid + eigenVectors->at(0)*minDist_EV0);
+	result.push_back(centroid + eigenVectors->at(0)*maxDist_EV0);
+
+	return result;
+}
+
+
+//Best-Fit Sphere
+/**
+@brief	Calculates the mean distance of all points in a given point cloud to a specified point.
+@details used for initial parameter guess
+@param	given point cloud
+@param	reference point for distance measurement
+@return	mean value of distances
+*/
+double getMeanDisToPoint(std::vector<Point3d>* points, Point3d point)
+{
+	//initialize variables
+	double m = points->size();
+	double sum = 0.0;
+
+	//calculate sum of squared distances
+	for (size_t i = 0; i < m; i++)
+	{
+		sum += sqDistance3d(points->at(i), point);
+	}
+
+	return sqrt(sum / m);
+}
+
+/**
+@brief	Calculates the distances from each point in a point cloud to the surface of the specified sphere.
+@details used to fill Jacobi matrix
+@param	given point cloud
+@param	center of given sphere
+@param	radius of given sphere
+@return	vector with distance measurements
+*/
+std::vector<double> getDistancesForJacobi(std::vector<Point3d>* points, Point3d center, double radius)
+{
+	//initialize variables
+	std::vector<double> result(points->size());
+
+	//calculate distances and fill vector
+	for (size_t i = 0; i < points->size(); i++)
+	{
+		result[i] = -1.0 * (distance3d(points->at(i), center) - radius);
+	}
+
+	return result;
+}
+
+/**
+@brief	Calculates the Jacobi matrix.
+@param	given point cloud
+@param	specified center point
+@param	distances from points in given cloud to specified center point
+@return	Jacobi matrix
+*/
+Matrix getJacobiMatrix(std::vector<Point3d>* points, Point3d center, std::vector<double> distances)
+{
+	//initialize variables
+	double N = points->size();
+	Matrix result = Matrix(N, 4);
+
+	double tempDist;
+
+	//fill result matrix
+	for (size_t row = 0; row < N; row++)
+	{
+		//calculate distance from current point to center
+		tempDist = distance3d(points->at(row), center);
+
+		//fill columns
+		result(row, 0) = -1.0;
+		result(row, 1) = -((points->at(row).x - center.x) / tempDist);
+		result(row, 2) = -((points->at(row).y - center.y) / tempDist);
+		result(row, 3) = -((points->at(row).z - center.z) / tempDist);
+	}
+
+	return result;
+}
+
+/**
+@brief	Calculates the expectation of the squared deviation of a random variable from its mean.
+@param	given set of data
+@return	variance as double value
+*/
+double getVariance(const std::vector<double>* data)
+{
+	//initialize variables
+	double N = data->size();
+	double mean = 0.0;
+	double result = 0.0;
+
+	//calculate mean value
+	for each (double dbl in *data)
+	{
+		mean += dbl;
+	}
+	mean /= N;
+
+	//calculate variance
+	for each (double dbl in *data)
+	{
+		result += sqr(dbl - mean);
+	}
+	result /= N;
 
 	return result;
 }

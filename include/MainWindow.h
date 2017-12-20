@@ -68,7 +68,9 @@ signals:
     void drawingSmoothedPointsChange(bool);
     void drawingThinnedPointsChange(bool);
 
+    void drawingBestFitLineChange(bool);
     void drawingBestFitPlaneChange(bool);
+    void drawingBestFitSphereChange(bool);
 
 private:
     void loadFileXYZ(const char* filename, std::vector<Point3d>& points);
@@ -95,8 +97,6 @@ private:
 	* @return is a vector which contains all smoothed points
 	*/
 	std::vector<Point3d> smoothPointsGaussian(const std::vector<Point3d>& points, Node* rootNode, double radius);
-
-	std::vector<Point3d> BestFitLine_elke();
 
 private slots:
     void openFile();
@@ -129,7 +129,9 @@ private slots:
     void smoothTmpPointChanged(int);
     void thinTmpPointChanged(int);
 
+    void applyBestFitLine();
     void applyBestFitPlane();
+    void applyBestFitSphere();
 
     std::tuple<Point3d, std::vector<Point3d>, std::vector<Point3d>,
                std::vector<Point3d>> bestFitPlane_daniel();
@@ -140,6 +142,8 @@ private slots:
 	* @return is a vector which contains all parameters of the function of the sphere
 	*/
 	std::vector<double> bestFitSphere_elke();
+
+    std::vector<Point3d> computeVisualSphere(const Point3d& center, double r);
 };
 
 #endif
