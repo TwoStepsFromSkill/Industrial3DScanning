@@ -691,7 +691,7 @@ std::vector<double> MainWindow::bestFitSphere_elke()
         std::cerr << "Iteration " << k << "\n";
 
 		std::vector<double> distances(m_points.size());
-		
+
 		// initalize jacobi matrix with rows for all points and columns for the 4 parameters
 		Matrix Jacobi(m_points.size(), 4);
 		for (std::size_t i = 0; i < m_points.size(); ++i)
@@ -703,7 +703,7 @@ std::vector<double> MainWindow::bestFitSphere_elke()
 			Jacobi(i, 2) = -((m_points[i][1] - X0[1]) / d);
 			Jacobi(i, 3) = -((m_points[i][2] - X0[2]) / d);
 		}
-		
+
 		// jacobi matrix = A, distances = b, we want to calculate new parameters which are in x
 		SVD::solveLinearEquationSystem(Jacobi, x, distances);
 		X0 +=Point3d(x[1], x[2], x[3]);
@@ -719,10 +719,6 @@ std::vector<double> MainWindow::bestFitSphere_elke()
 		{
 			return returnValues;
 		}
-		// stop if standard deviation of th distances is small or does not change
-		// QUESTION: Is r0 the standard deviation?
-		else if (r0 < 1.0e-6)
-			return returnValues;
 	}
 	return returnValues;
 }
