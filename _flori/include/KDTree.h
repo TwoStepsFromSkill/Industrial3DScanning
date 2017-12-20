@@ -49,13 +49,27 @@ std::vector<Point3d> smoothPointsGaussian(std::vector<Point3d>& points, Node* ro
 std::vector<double> colorFromGradientHSV(double index);
 
 //Thinning
+/**
+@image html Thinning_comparison.jpg
+*/
 void homogeneousThinning(Node* globalTree, Node* subTree, const double radius, std::vector<Point3d>& output);
 
-//Best Fit Plane
-Point3d getCentroid(std::vector<Point3d> points);
+//Best-Fit Plane
+Point3d getCentroid(std::vector<Point3d>* points);
 
-Matrix getCovarianceMatrix(std::vector<Point3d> points, Point3d centroid);
+Matrix getCovarianceMatrix(std::vector<Point3d>* points, Point3d centroid);
 
-Point3d getDirectionOfBestFitPlane(Matrix covariance);
+std::vector<Point3d> getDirectionsOfBestFit(Matrix covariance, std::vector<Point3d>* eigenVectorsOutput);
+
+std::vector<Point3d> getCornersOfBestFit(std::vector<Point3d>* points, Point3d centroid, std::vector<Point3d>* eigenVectors);
+
+//Best-Fit Sphere
+double getMeanDisToPoint(std::vector<Point3d>* points, Point3d point);
+
+std::vector<double> getDistancesForJacobi(std::vector<Point3d>* points, Point3d center, double radius);
+
+Matrix getJacobiMatrix(std::vector<Point3d>* points, Point3d center, std::vector<double> distances);
+
+double getVariance(const std::vector<double>* data);
 
 #endif // KD_TREE_H

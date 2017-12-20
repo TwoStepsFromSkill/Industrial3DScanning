@@ -14,10 +14,14 @@
 
 #include <gl/GLU.h>
 
+#include "SVD.h"
 #include "GLcamera.h"
 #include "Point3d.h"
 #include "KDTree.h"
 #include "Matrix.h"
+
+#include "glut.h"
+
 
 //Normally compiler & linker options are set in the project file and not in the source code
 //Its just here to show what dependencies are needed 
@@ -112,11 +116,13 @@ int main(int argc, char* argv[]) //this function is called, wenn ou double-click
   std::vector<Point3d> points;
 
   //try to load point cloud data from file
-  loadFileXYZ("data/cone.xyz", points);
+  //loadFileXYZ("data/cone.xyz", points);
   //loadFileXYZ("data/cap.xyz", points);
   //loadFileXYZ("data/L03 Test Tree.xyz", points);
   //loadFileXYZ("data/Stanford Happy Buddha.xyz", points);
   //loadFileXYZ("data/Stanford Bunny.xyz", points);
+  //loadFileXYZ("data/sphere.xyz", points);
+  loadFileXYZ("data/sphere2.xyz", points);
   
   //OK, we now compute the min and max coordinates for our bounding box
   updateScene(points);
@@ -198,7 +204,7 @@ int main(int argc, char* argv[]) //this function is called, wenn ou double-click
   std::cout << "\nGREEN - Nearest Neighbor Search Result:\n " << Point3dToString(&NN) << "\n";
   #pragma endregion
 
-  #pragma region Smoothing
+  #pragma region SMOOTHING
   //specify degree of smoothing
   const double smoothRad = 0.3;
   
@@ -225,23 +231,103 @@ int main(int argc, char* argv[]) //this function is called, wenn ou double-click
 
   //console output
   std::cout << "\nBLACK - Thinning Result:";
-  std::cout << "\n " << thinnedPoints.size() << " of " << points.size() << " points remaining!";
+  std::cout << "\n " << thinnedPoints.size() << " of " << points.size() << " points remaining!" << std::endl;
   #pragma endregion
 
-  #pragma region BEST FIT PLANE
+  #pragma region BEST-FIT LINE & PLANE
   // 1. compute centroid of all points
-  Point3d centroid = getCentroid(points);
+  Point3d centroid = getCentroid(&points);
 
   // 2. compute covariance matrix
-  Matrix covariance = getCovarianceMatrix(points, centroid);
+  Matrix covariance = getCovarianceMatrix(&points, centroid);
 
   // 3. decompose covariance matrix with SVD
   // 4. get direction of best-fit plane
-  Point3d bfPlaneDirection = getDirectionOfBestFitPlane(covariance);
+  std::vector<Point3d> eigenVectors;
 
-  std::cout << "\n\nbfDirection = " << Point3dToString(&bfPlaneDirection) << "\n";
+  std::vector<Point3d> bestFitDirections = getDirectionsOfBestFit(covariance, &eigenVectors);
+
+  std::vector<Point3d> bfCorners = getCornersOfBestFit(&points, centroid, &eigenVectors);
   #pragma endregion
 
+  #pragma region BEST-FIT SPHERE
+  // 1. Comupute initital parameter guess
+  Point3d curCenter = getCentroid(&points);
+  double  curRadius = getMeanDisToPoint(&points, curCenter);
+
+  std::cout << "\nSphere 0: " << Point3dToString(&curCenter) << ", Radius " << curRadius << std::endl;
+
+  //initialize iteration variables
+  unsigned int k = 0;
+  bool iterate = true;
+
+  //initialize linear equation variables A * x = b
+  std::vector<double> distancesVec(points.size()); //b
+  Matrix M_Jacobi(points.size(), 4); //A
+  std::vector<double> soltnVec(4);	 //x
+
+  //initialize break condition variables
+  double margin, variance, deviation = 0.0;
+
+  //initialize draw variables
+  std::vector<Point3d> centerStorage = { curCenter };
+  std::vector<double>  radiusStorage = { curRadius };
+
+  while (iterate)
+  {
+	  //count iterations
+	  k += 1;
+
+	  // 2. Compute distances: di = ||Xi - Xo|| - r
+	  distancesVec = getDistancesForJacobi(&points, curCenter, curRadius);
+
+
+	  // 3. Compute Jacobi Matrix
+	  M_Jacobi = getJacobiMatrix(&points, curCenter, distancesVec);
+
+
+	  // 4. Solve for the parameter updates
+	  SVD::solveLinearEquationSystem(M_Jacobi, soltnVec, distancesVec);
+
+
+	  // 5. Update current radius and center point
+	  curCenter += Point3d(soltnVec[1], soltnVec[2], soltnVec[3]);
+	  curRadius += soltnVec[0];
+
+	  centerStorage.push_back(curCenter);
+	  radiusStorage.push_back(curRadius);
+
+	  std::cout << "\nSphere " << k << ": " << Point3dToString(&curCenter);	  
+	  std::cout << ", Radius " << curRadius << std::endl;
+
+
+	  // 6. Check the current result and stop if a break condition is met:
+	  // -> sqrt(dXo² + dYo² + dZo² + dr²) = 0
+	  margin = sqrt(sqr(soltnVec[0]) 
+					+ sqr(soltnVec[1])
+					+ sqr(soltnVec[2])
+					+ sqr(soltnVec[3]));
+
+	  std::cout << "   margin = " << margin << std::endl;
+
+	  if (margin < 1.0e-4)
+		  iterate = false;
+
+	  // -> standard deviation (= sqrt of variance) of the distances is small or does not change
+	  variance = getVariance(&distancesVec);
+
+	  std::cout << "deviation = " << sqrt(variance) << std::endl;
+
+	  if (abs(sqrt(variance) - deviation) < 1.0e-4)
+		  iterate = false;
+	  else
+		  deviation = sqrt(variance);
+
+	  // -> max. number of iterations is reached (~100)
+	  if (k > 100)
+		  iterate = false;
+  }
+  #pragma endregion
 
   //-------------------------------------------------------------------------------------------------
 
@@ -256,19 +342,20 @@ int main(int argc, char* argv[]) //this function is called, wenn ou double-click
     //draws the scene background
     drawBackground();
 
-    //draw points
-    glPointSize(2);
+	//draw points
+	glPointSize(3);
 
+	//draw point cloud
     if (!points.empty())
     { 
       glColor3ub(255, 255, 255);
       
 	  glEnableClientState(GL_VERTEX_ARRAY); //enable data upload to GPU
       glVertexPointer(3, GL_DOUBLE, sizeof(Point3d), &points[0]);
-      
+
       //draw point cloud
       glDrawArrays(GL_POINTS, 0, (unsigned int)points.size());
-      glDisableClientState(GL_VERTEX_ARRAY);  //disable data upload to GPU
+	  glDisableClientState(GL_VERTEX_ARRAY);  //disable data upload to GPU
     }
 
 	//-----------------------EXERCISE--AREA-------------------------------------------------------------
@@ -338,7 +425,7 @@ int main(int argc, char* argv[]) //this function is called, wenn ou double-click
 	}*/
 
 	//highlight Thinning Result (BLACK)
-	if (!thinnedPoints.empty())
+	/*if (!thinnedPoints.empty())
 	{
 		glColor3ub(0, 0, 0);
 		glPointSize(4);
@@ -348,29 +435,91 @@ int main(int argc, char* argv[]) //this function is called, wenn ou double-click
 
 		glDrawArrays(GL_POINTS, 0, (unsigned int)thinnedPoints.size());
 		glDisableClientState(GL_VERTEX_ARRAY); //disable data upload to GPU
-	}
+	}*/
 
-	//draw best-fit plane
-	if (true)
+	//draw best-fit line (GOLD)
+	if (false)
 	{
-		glColor3ub(0, 0, 0);
-		glPointSize(4);
+		glColor3ub(255, 215, 0);
+		glLineWidth(1.5);
 
-		glEnableClientState(GL_QUADS); //enable data upload to GPU
+		glEnableClientState(GL_LINES); //enable data upload to GPU
 
-		glBegin(GL_QUADS);
-			glVertex3f(1.0f, 1.0f, -1.0f);
-			glVertex3f(-1.0f, 1.0f, -1.0f);
-			glVertex3f(-1.0f, 1.0f, 1.0f);
-			glVertex3f(1.0f, 1.0f, 1.0f);
+		glBegin(GL_LINES);
+			glVertex3d(bfCorners[4].x, bfCorners[4].y, bfCorners[4].z);
+			glVertex3d(bfCorners[5].x, bfCorners[5].y, bfCorners[5].z);
 		glEnd();
 
-		glDisableClientState(GL_QUADS); //enable data upload to GPU
+		glDisableClientState(GL_LINES); //enable data upload to GPU
+	}
+
+	//draw best-fit plane (DARK RED)
+	if (false)
+	{
+		//draw lines between corners
+		glColor3ub(150, 0, 0);
+
+		glEnableClientState(GL_LINE_LOOP); //enable data upload to GPU
+
+		glBegin(GL_LINE_LOOP);
+			glVertex3d(bfCorners[0].x, bfCorners[0].y, bfCorners[0].z);
+			glVertex3d(bfCorners[1].x, bfCorners[1].y, bfCorners[1].z);
+			glVertex3d(bfCorners[2].x, bfCorners[2].y, bfCorners[2].z);
+			glVertex3d(bfCorners[3].x, bfCorners[3].y, bfCorners[3].z);
+		glEnd();
+
+		glDisableClientState(GL_LINE_LOOP); //enable data upload to GPU
+
+		//draw corner vertices
+		glColor3ub(190, 0, 0);
+		glPointSize(4);
+
+		glEnableClientState(GL_POINTS); //enable data upload to GPU
+		
+		glBegin(GL_POINTS);
+			glVertex3d(bfCorners[0].x, bfCorners[0].y, bfCorners[0].z);
+			glVertex3d(bfCorners[1].x, bfCorners[1].y, bfCorners[1].z);
+			glVertex3d(bfCorners[2].x, bfCorners[2].y, bfCorners[2].z);
+			glVertex3d(bfCorners[3].x, bfCorners[3].y, bfCorners[3].z);
+		glEnd();
+
+		glDisableClientState(GL_POINTS); //enable data upload to GPU
+	}
+
+	//draw best-fit sphere
+	if (true)
+	{		
+		//draw centers
+		glColor3ub(255, 255, 0);
+		glPointSize(10);
+
+		glEnableClientState(GL_VERTEX_ARRAY); //enable data upload to GPU
+		glVertexPointer(3, GL_DOUBLE, sizeof(Point3d), &centerStorage[0]);
+
+		glDrawArrays(GL_POINTS, 0, (unsigned int)centerStorage.size());
+		glDisableClientState(GL_VERTEX_ARRAY);  //disable data upload to GPU
+
+		//draw wires
+		glPointSize(0.25);
+		glLineWidth(0.25);
+
+		for (size_t i = 0; i < k; i++)
+		{
+			int color = (k - i) * 255 / k;
+
+			glColor3ub(0, color, 0);
+
+			glPushMatrix();
+				glTranslated(centerStorage[i].x, centerStorage[i].y, centerStorage[i].z);
+				glutWireSphere(radiusStorage[i], 20, 20);
+			glPopMatrix();
+		}
 	}
 
 	//-------------------------------------------------------------------------------------------------
 
     //draw coordinate axes
+	glLineWidth(1);
     drawCoordinateAxes();
 
     /* Swap front and back buffers */
@@ -579,10 +728,10 @@ void drawBackground()
   glLoadIdentity();
 
   glBegin(GL_QUADS);
-  glColor3ub(100, 100, 100); //color bottom
-  glVertex2f(0.0f, 0.0f);  glVertex2f(winWidth, 0.0f);
-  glColor3ub(38, 38, 38);  //color top
-  glVertex2f(winWidth, winHeight);  glVertex2f(0.0f, winHeight);
+	  glColor3ub(100, 100, 100); //color bottom
+	  glVertex2f(0.0f, 0.0f);  glVertex2f(winWidth, 0.0f);
+	  glColor3ub(38, 38, 38);  //color top
+	  glVertex2f(winWidth, winHeight);  glVertex2f(0.0f, winHeight);
   glEnd();
 
   glMatrixMode(GL_PROJECTION); //select to Projektionmatrix
@@ -593,36 +742,3 @@ void drawBackground()
 
   glPopAttrib();  //restore last attributes
 }
-
-/*/Thinning prototype
-void homogeneousThinning(Node* tree, const double radius, std::vector<Point3d>& output)
-{
-	//handle special case
-	if (!tree)
-		return;
-
-	if (!tree->leftChild && !tree->rightChild) //leaf is reached
-	{
-		auto* leaf = tree->ptrFirstPoint;
-
-		if (!leaf->flag_ignore) //leaf hasn't been flagged
-		{
-			//save leaf in output vector
-			output.push_back(*leaf);
-
-			//get points in spherical neighborhood of current leaf
-			std::vector<Point3d> pointsToFlag = queryRangeSphere(tree, leaf, radius);
-
-			//flag detected points to ignore them later on
-			for each (Point3d pt in pointsToFlag)
-			{
-				pt.flag_ignore = true;
-			}
-		}
-	}
-	else //traverse tree
-	{
-		homogeneousThinning(tree->leftChild, radius, output);
-		homogeneousThinning(tree->rightChild, radius, output);
-	}
-}*/
