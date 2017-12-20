@@ -98,6 +98,15 @@ private:
 	*/
 	std::vector<Point3d> smoothPointsGaussian(const std::vector<Point3d>& points, Node* rootNode, double radius);
 
+    std::tuple<Point3d, std::vector<Point3d>, std::vector<Point3d>,
+               std::vector<Point3d>> bestFitPlane_daniel();
+
+	std::vector<double> bestFitSphere_elke();
+
+    std::vector<Point3d> computeVisualSphere(const Point3d& center, double r);
+
+    double stdDeviation(const std::vector<double>& values) const;
+
 private slots:
     void openFile();
     void changeProjection();
@@ -132,13 +141,6 @@ private slots:
     void applyBestFitLine();
     void applyBestFitPlane();
     void applyBestFitSphere();
-
-    std::tuple<Point3d, std::vector<Point3d>, std::vector<Point3d>,
-               std::vector<Point3d>> bestFitPlane_daniel();
-
-	std::vector<double> bestFitSphere_elke();
-
-    std::vector<Point3d> computeVisualSphere(const Point3d& center, double r);
 };
 
 #endif

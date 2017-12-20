@@ -1,0 +1,6 @@
+---
+Checks:          '*,-android*,-clang-analyzer-llvm.Conventions,-clang-analyzer-osx*,-llvm-header-guard,-modernize-use-default-member-init'
+HeaderFilterRegex: '.*'
+AnalyzeTemporaryDtors: false
+FormatStyle:     file
+...

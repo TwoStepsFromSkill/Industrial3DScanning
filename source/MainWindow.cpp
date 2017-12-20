@@ -473,7 +473,6 @@ void MainWindow::applyBestFitLine()
     auto startTime = std::chrono::system_clock::now();
     auto planeParts = bestFitPlane_daniel();
 
-
     const Point3d& C = std::get<0>(planeParts);
     const Point3d& EV0 = std::get<3>(planeParts)[0];
     std::vector<double> distances(m_points.size());
@@ -486,6 +485,7 @@ void MainWindow::applyBestFitLine()
 
     duration_milli elapsed = std::chrono::system_clock::now() - startTime;
     std::cerr << "Computed BF Line! Took [" << elapsed.count() << "ms]\n";
+    std::cerr << "StdDev: " << stdDeviation(distances) << "\n";
 
     m_glWidget->setBFLPoints(std::get<2>(planeParts));
     m_glWidget->setPointDistances(distances);
@@ -512,6 +512,7 @@ void MainWindow::applyBestFitPlane()
 
     duration_milli elapsed = std::chrono::system_clock::now() - startTime;
     std::cerr << "Computed BF Plane! Took [" << elapsed.count() << "ms]\n";
+    std::cerr << "StdDev: " << stdDeviation(distances) << "\n";
 
     m_glWidget->setBFPCorners(std::get<1>(planeParts));
     m_glWidget->setPointDistances(distances);
@@ -537,6 +538,8 @@ void MainWindow::applyBestFitSphere()
 
     duration_milli elapsed = std::chrono::system_clock::now() - startTime;
     std::cerr << "Computed BF Sphere! Took [" << elapsed.count() << "ms]\n";
+    std::cerr << "StdDev: " << stdDeviation(distances) << "\n";
+
     m_glWidget->setPointDistances(distances);
     m_glWidget->drawingMainCloudPointWithColorArray(true);
     m_glWidget->colorScaleToDiverge();
@@ -842,4 +845,27 @@ std::vector<Point3d> MainWindow::computeVisualSphere(const Point3d& center,
     }
 
     return result;
+}
+
+double MainWindow::stdDeviation(const std::vector<double>& values) const
+{
+    double mean = 0.0;
+
+#pragma omp parallel for reduction(+:mean)
+    for (int i = 0; i < values.size(); ++i)
+    {
+        mean += std::fabs(values[i]);
+    }
+
+    mean /= values.size();
+    double variance = 0.0;
+
+#pragma omp parallel for reduction(+:variance)
+    for (int i = 0; i < values.size(); ++i)
+    {
+        variance += (std::fabs(values[i]) - mean) * (std::fabs(values[i]) - mean);
+    }
+
+    variance /= (values.size() - 1);
+    return std::sqrt(variance);
 }
