@@ -675,34 +675,37 @@ std::vector<double> MainWindow::bestFitSphere_elke()
 	Point3d X0 = Point3d(centerX, centerY, centerZ);
 	double quadricDist = 0;
 
+#pragma omp parallel for reduction(+:quadricDist)
 	for (int i = 0; i < m_points.size(); ++i)
 	{
 		quadricDist += sqDistance3d(m_points[i], X0);
 	}
-
+	// computes the initial radius
 	double r0 = sqrt((1.0 / m_points.size())*quadricDist);
 	std::vector<double> x(4);
 
-	const int maxNumberOfIterations = 100;
+	const size_t maxNumberOfIterations = 100;
 	std::vector<double> returnValues(4);
-	for (int k = 1; k < maxNumberOfIterations; k++)
+	for (std::size_t k = 1; k < maxNumberOfIterations; k++)
 	{
         std::cerr << "Iteration " << k << "\n";
 
 		std::vector<double> distances(m_points.size());
+		
 		// initalize jacobi matrix with rows for all points and columns for the 4 parameters
-		Matrix jacobi(m_points.size(), 4);
-		for (int i = 0; i < m_points.size(); ++i)
+		Matrix Jacobi(m_points.size(), 4);
+		for (std::size_t i = 0; i < m_points.size(); ++i)
 		{
 			double d = distance3d(m_points[i], X0);
 			distances[i] = -(d - r0);
-			jacobi(i, 0) = -1;
-			jacobi(i, 1) = -((m_points[i][0]-X0[0])/ d);
-			jacobi(i, 2) = -((m_points[i][1] - X0[1]) / d);
-			jacobi(i, 3) = -((m_points[i][2] - X0[2]) / d);
+			Jacobi(i, 0) = -1;
+			Jacobi(i, 1) = -((m_points[i][0]-X0[0])/ d);
+			Jacobi(i, 2) = -((m_points[i][1] - X0[1]) / d);
+			Jacobi(i, 3) = -((m_points[i][2] - X0[2]) / d);
 		}
+		
 		// jacobi matrix = A, distances = b, we want to calculate new parameters which are in x
-		SVD::solveLinearEquationSystem(jacobi, x, distances);
+		SVD::solveLinearEquationSystem(Jacobi, x, distances);
 		X0 +=Point3d(x[1], x[2], x[3]);
 		r0 +=x[0];
 
