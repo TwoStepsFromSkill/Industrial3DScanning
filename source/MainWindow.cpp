@@ -26,6 +26,7 @@
 #include "BestFitLineWidget.h"
 #include "BestFitPlaneWidget.h"
 #include "BestFitSphereWidget.h"
+#include "NormalWidget.h"
 #include "Matrix.h"
 #include "SVD.h"
 
@@ -52,16 +53,16 @@ MainWindow::MainWindow()
     m_tabWidget->setEnabled(false);
 
     m_rangeWidget = new RangeQueryWidget(this);
-    m_tabWidget->addTab(m_rangeWidget, QString("Range Query"));
+    m_tabWidget->addTab(m_rangeWidget, QString("RQ"));
 
     m_nearestWidget = new NearestNeighborWidget(this);
-    m_tabWidget->addTab(m_nearestWidget, QString("Nearest Neighboor"));
+    m_tabWidget->addTab(m_nearestWidget, QString("NN"));
 
     m_smoothingWidget = new SmoothingWidget(this);
-    m_tabWidget->addTab(m_smoothingWidget, QString("Smoothing"));
+    m_tabWidget->addTab(m_smoothingWidget, QString("Smooth"));
 
     m_thinningWidget = new ThinningWidget(this);
-    m_tabWidget->addTab(m_thinningWidget, QString("Thinning"));
+    m_tabWidget->addTab(m_thinningWidget, QString("Thin"));
 
     m_bestFitLineWidget = new BestFitLineWidget(this);
     m_tabWidget->addTab(m_bestFitLineWidget, QString("BF Line"));
@@ -71,6 +72,9 @@ MainWindow::MainWindow()
 
     m_bestFitSphereWidget = new BestFitSphereWidget(this);
     m_tabWidget->addTab(m_bestFitSphereWidget, QString("BF Sphere"));
+
+    m_normalWidget = new NormalWidget(this);
+    m_tabWidget->addTab(m_normalWidget, QString("Normal"));
 
     m_mainLayout->addWidget(m_tabWidget);
 
@@ -270,6 +274,7 @@ void MainWindow::updateSidebarWidgetData()
     m_smoothingWidget->setNumberOfPoints(m_points.size());
     m_thinningWidget->resetValueRange(xMin, xMax, yMin, yMax, zMin, zMax);
     m_thinningWidget->setNumberOfPoints(m_points.size());
+    m_normalWidget->resetValueRange(xMin, xMax, yMin, yMax, zMin, zMax);
 }
 
 void MainWindow::rangeQueryCenterChanged(double x, double y, double z)

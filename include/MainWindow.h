@@ -17,6 +17,7 @@ class ThinningWidget;
 class BestFitLineWidget;
 class BestFitPlaneWidget;
 class BestFitSphereWidget;
+class NormalWidget;
 
 class MainWindow : public QMainWindow
 {
@@ -47,6 +48,8 @@ private:
     BestFitLineWidget* m_bestFitLineWidget;
     BestFitPlaneWidget* m_bestFitPlaneWidget;
     BestFitSphereWidget* m_bestFitSphereWidget;
+
+    NormalWidget* m_normalWidget;
 
     std::vector<Point3d> m_points;
     Node* m_kdTree;

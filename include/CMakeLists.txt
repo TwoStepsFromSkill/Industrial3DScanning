@@ -15,4 +15,5 @@ set(HEADER
     ${CMAKE_CURRENT_SOURCE_DIR}/BestFitLineWidget.h
     ${CMAKE_CURRENT_SOURCE_DIR}/BestFitPlaneWidget.h
     ${CMAKE_CURRENT_SOURCE_DIR}/BestFitSphereWidget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/NormalWidget.h
     PARENT_SCOPE)
