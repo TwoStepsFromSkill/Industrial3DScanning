@@ -138,6 +138,8 @@ private slots:
     void applyBestFitPlane();
     void applyBestFitSphere();
 
+    void applyVertexNormal();
+
     std::tuple<Point3d, std::vector<Point3d>, std::vector<Point3d>,
                std::vector<Point3d>> bestFitPlane_daniel();
 	/**
