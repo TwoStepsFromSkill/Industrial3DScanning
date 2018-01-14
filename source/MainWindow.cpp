@@ -169,6 +169,8 @@ MainWindow::MainWindow()
     // Best Fit Sphere
     connect(m_bestFitSphereWidget, SIGNAL(applyPressed()), this, SLOT(applyBestFitSphere()));
     connect(this, SIGNAL(drawingBestFitSphereChange(bool)), m_glWidget, SLOT(drawingBestFitSphereChanged(bool)));
+
+    connect(m_normalWidget, SIGNAL(applyPressed()), this, SLOT(applyVertexNormal()));
 }
 
 void MainWindow::openFile()
@@ -559,6 +561,11 @@ void MainWindow::applyBestFitSphere()
     std::cerr << "RADIUS: " << sphereParts[3] << "\n";
 
     emit drawingBestFitSphereChange(true);
+}
+
+void MainWindow::applyVertexNormal()
+{
+    // std::vector<Point3d> normals = computeVertexNormals();
 }
 
 std::tuple<Point3d, std::vector<Point3d>, std::vector<Point3d>,
