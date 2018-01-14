@@ -30,6 +30,9 @@
 #include "Matrix.h"
 #include "SVD.h"
 
+#define _USE_MATH_DEFINES
+#include <math.h> 
+
 using duration_micro = std::chrono::duration<double, std::micro>;
 using duration_milli = std::chrono::duration<double, std::milli>;
 
@@ -880,3 +883,4 @@ double MainWindow::stdDeviation(const std::vector<double>& values) const
     variance /= (values.size() - 1);
     return std::sqrt(variance);
 }
+
