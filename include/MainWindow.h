@@ -140,6 +140,9 @@ private slots:
 
     std::tuple<Point3d, std::vector<Point3d>, std::vector<Point3d>,
                std::vector<Point3d>> bestFitPlane_daniel();
+
+	std::tuple<Point3d, std::vector<Point3d>, std::vector<Point3d>,
+		std::vector<Point3d>> MainWindow::bestFitPlaneForSomePoints(std::vector<Point3d> points);
 	/**
 	* @brief bestFitSphere_elke is a function that computes the best fit sphere for a given point cloud m_points
 	* @details  The parameter for the function of the sphere were iteratively computed by a singular value decomposition
@@ -149,6 +152,10 @@ private slots:
 	std::vector<double> bestFitSphere_elke();
 
     std::vector<Point3d> computeVisualSphere(const Point3d& center, double r);
+	
+	std::vector<Point3d> calculateAllNormals();
+	
+	Point3d calculateNormalVector(std::vector<Point3d> plane);
 };
 
 #endif
