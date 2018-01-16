@@ -564,8 +564,10 @@ void MainWindow::applyBestFitSphere()
 }
 
 void MainWindow::applyVertexNormal()
-{
-    // std::vector<Point3d> normals = computeVertexNormals();
+{  
+	double radius = 0.0;
+	m_normalWidget->getRadius(&radius);
+	std::vector<Point3d> normals = calculateAllNormals(radius);
 }
 
 std::tuple<Point3d, std::vector<Point3d>, std::vector<Point3d>,
@@ -985,14 +987,14 @@ double MainWindow::stdDeviation(const std::vector<double>& values) const
     return std::sqrt(variance);
 }
 
-std::vector<Point3d> MainWindow::calculateAllNormals()
+std::vector<Point3d> MainWindow::calculateAllNormals(const double radius)
 {
 	std::vector<Point3d> normals(m_points.size());
 	
-#pragma omp parallel for
+//#pragma omp parallel for
 	for (int i = 0; i < m_points.size(); i++)
 	{
-		const int radius = 0.2;		
+		
 		std::vector<Point3d> neighborPoints = queryRadius(m_kdTree, radius, m_points[i]);
 		auto planeParts = bestFitPlaneForSomePoints(neighborPoints);
 		normals[i] = calculateNormalVector(std::get<1>(planeParts));

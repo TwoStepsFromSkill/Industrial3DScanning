@@ -155,7 +155,7 @@ private slots:
 
     std::vector<Point3d> computeVisualSphere(const Point3d& center, double r);
 	
-	std::vector<Point3d> calculateAllNormals();
+	std::vector<Point3d> calculateAllNormals(const double radius);
 	
 	Point3d calculateNormalVector(std::vector<Point3d> plane);
 };
