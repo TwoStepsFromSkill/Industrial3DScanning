@@ -291,6 +291,16 @@ void GLwidget::paintGL()
         glDrawArrays(GL_LINES, 0, (unsigned int) m_spherePoints.size());
         glDisableClientState(GL_VERTEX_ARRAY);
     }
+	
+	if (m_drawNormals && !m_normals.empty())
+	{
+
+		glEnableClientState(GL_NORMAL_ARRAY);
+		glColor3ub(0, 255, 255);
+		glNormalPointer(GL_DOUBLE, 0, &m_normals[0]);
+		glDrawArrays(GL_LINES, 0, (unsigned int)m_normals.size());
+		glDisableClientState(GL_NORMAL_ARRAY);
+	}
 
     //draw coordinate frame
     drawCoordinateAxes();

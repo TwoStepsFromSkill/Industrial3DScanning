@@ -568,6 +568,8 @@ void MainWindow::applyVertexNormal()
 	double radius = 0.0;
 	m_normalWidget->getRadius(&radius);
 	std::vector<Point3d> normals = calculateAllNormals(radius);
+	m_glWidget->drawingNormals(normals);
+	m_glWidget->setDrawNormals(true);
 }
 
 std::tuple<Point3d, std::vector<Point3d>, std::vector<Point3d>,
@@ -991,7 +993,7 @@ std::vector<Point3d> MainWindow::calculateAllNormals(const double radius)
 {
 	std::vector<Point3d> normals(m_points.size());
 	
-//#pragma omp parallel for
+#pragma omp parallel for
 	for (int i = 0; i < m_points.size(); i++)
 	{
 		

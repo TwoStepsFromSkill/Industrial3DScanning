@@ -113,6 +113,14 @@ public:
     //return camera
     GLcamera& camera(){return m_camera;}
 
+	void drawingNormals(std::vector<Point3d> normals)
+	{
+		m_normals = normals;
+	}
+	void setDrawNormals(bool value)
+	{
+		m_drawNormals = value;
+	}
 protected:
     bool eventFilter(QObject *obj, QEvent *event);
 
@@ -275,6 +283,9 @@ private:
 
     unsigned char m_BG_top_color[4];
     unsigned char m_BG_bottom_color[4];
+
+	std::vector<Point3d> m_normals;
+	bool m_drawNormals;
 };
 
 #endif
