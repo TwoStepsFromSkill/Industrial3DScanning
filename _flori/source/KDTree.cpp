@@ -125,6 +125,14 @@ std::vector<Point3d*> queryRangeSphere(Node* tree, Point3d* center, const double
 
 	return result;
 }
+std::vector<Point3d> queryRangeSphere2(Node* tree, Point3d* center, const double radius)
+{
+	std::vector<Point3d> result;
+
+	queryRangeSphere_impl2(tree, center, radius, 0, result);
+
+	return result;
+}
 
 void queryRange_impl(Node* tree, const double minMax[6], unsigned int depth, std::vector<Point3d>& out)
 {
@@ -237,6 +245,57 @@ void queryRangeSphere_impl(Node* tree, Point3d* center, const double radius, uns
 			queryRangeSphere_impl(tree->leftChild, center, radius, dimension + 1, out, flagging);
 		if (cmpr + radius > tree->median)
 			queryRangeSphere_impl(tree->rightChild, center, radius, dimension + 1, out, flagging);
+	}
+}
+
+void queryRangeSphere_impl2(Node* tree, Point3d* center, const double radius, unsigned int depth, std::vector<Point3d>& out)
+{
+	// Stepped to deep
+	if (!tree)
+		return;
+
+	// Reached a leaf -> check if points are inside the spherical neighborhood and add the ones that are
+	if (!tree->leftChild && !tree->rightChild)
+	{
+		auto* start = tree->ptrFirstPoint;
+
+		//iterate once
+		while (start != tree->ptrLastPoint)
+		{
+			Point3d pt = *start;
+
+			//calculate distance between pt and center
+			const double dist = distance3d(*center, pt);
+
+			//add leaf to output vector if it lies within sphere(center, radius)
+			if (dist <= radius)
+			{
+				out.push_back(*tree->ptrFirstPoint);
+			}
+		
+			++start;
+		}
+	}
+	else //traverse tree
+	{
+		unsigned int dimension = depth % 3;
+
+		//switch dimension for comparison with median
+		double cmpr;
+
+		switch (dimension)
+		{
+		case 0: cmpr = center->x; break;
+		case 1: cmpr = center->y; break;
+		case 2: cmpr = center->z; break;
+
+		default: break;
+		}
+
+		if (cmpr - radius <= tree->median)
+			queryRangeSphere_impl2(tree->leftChild, center, radius, dimension + 1, out);
+		if (cmpr + radius > tree->median)
+			queryRangeSphere_impl2(tree->rightChild, center, radius, dimension + 1, out);
 	}
 }
 
@@ -570,6 +629,23 @@ Point3d getCentroid(std::vector<Point3d>* points)
 
 	return result;
 }
+Point3d getCentroid(std::vector<Point3d*> points)
+{
+	Point3d result = Point3d(0.0, 0.0, 0.0);
+
+	const int N = points.size();
+
+	for each (Point3d* ptPtr in points)
+	{
+		result.x += ptPtr->x;
+		result.y += ptPtr->y;
+		result.z += ptPtr->z;
+	}
+
+	result *= 1.0 / N;
+
+	return result;
+}
 
 /**
 @brief	Calculates the covariance matrix of a given point cloud with a specified centroid.
@@ -826,4 +902,116 @@ double getVariance(const std::vector<double>* data)
 	result /= N;
 
 	return result;
+}
+
+
+//Point Normals
+//calculates normal vector of a plane with given corner points
+Point3d getPlaneNormal(std::vector<Point3d> corners)
+{
+	Point3d AB = corners.at(1) - corners.at(0);
+	Point3d AC = corners.at(2) - corners.at(0);
+	
+	return crossProduct(AB, AC);
+}
+
+std::vector<Point3d> bestFitPlaneCorners(std::vector<Point3d> points)
+{
+	// Computer center (mean)
+	double centerX = 0;
+	double centerY = 0;
+	double centerZ = 0;
+
+#pragma omp parallel for reduction(+:centerX,centerY,centerZ)
+	for (int i = 0; i < points.size(); ++i)
+	{
+		centerX += points.at(i).x;
+		centerY += points.at(i).y;
+		centerZ += points.at(i).z;
+	}
+
+	centerX /= points.size();
+	centerY /= points.size();
+	centerZ /= points.size();
+
+	// Compute covariance matrix
+	double Cxx = 0; double Cxy = 0; double Cxz = 0;
+	double Cyy = 0; double Cyz = 0;
+	double Czz = 0;
+
+	std::size_t n = points.size() - 1;
+
+#pragma omp parallel for reduction(+:centerX,centerY,centerZ)
+	for (int i = 0; i < points.size(); ++i)
+	{
+		Cxx += (points.at(i).x - centerX)*(points.at(i).x - centerX);
+		Cxy += (points.at(i).x - centerX)*(points.at(i).y - centerY);
+		Cxz += (points.at(i).x - centerX)*(points.at(i).z - centerZ);
+
+		Cyy += (points.at(i).y - centerY)*(points.at(i).y - centerY);
+		Cyz += (points.at(i).y - centerY)*(points.at(i).z - centerZ);
+
+		Czz += (points.at(i).z - centerZ)*(points.at(i).z - centerZ);
+	}
+
+	Matrix cov(3, 3);
+
+	cov(0, 0) = Cxx / n;
+	cov(0, 1) = Cxy / n;
+	cov(0, 2) = Cxz / n;
+
+	cov(1, 0) = cov(0, 1);
+	cov(1, 1) = Cyy / n;
+	cov(1, 2) = Cyz / n;
+
+	cov(2, 0) = cov(0, 2);
+	cov(2, 1) = cov(1, 2);
+	cov(2, 2) = Czz / n;
+
+	SVD::computeSymmetricEigenvectors(cov);
+
+	Point3d EV0(cov(0, 0), cov(1, 0), cov(2, 0));
+	Point3d EV1(cov(0, 1), cov(1, 1), cov(2, 1));
+	Point3d EV2(cov(0, 2), cov(1, 2), cov(2, 2));
+
+	normalizeVector(EV0);
+	normalizeVector(EV1);
+	normalizeVector(EV2);
+
+	Point3d C(centerX, centerY, centerZ);
+
+	double maxDistEV0 = std::numeric_limits<double>::lowest();
+	double minDistEV0 = std::numeric_limits<double>::max();
+
+	double maxDistEV1 = std::numeric_limits<double>::lowest();
+	double minDistEV1 = std::numeric_limits<double>::max();
+
+	for (std::size_t i = 0; i < points.size(); ++i)
+	{
+		double dist = dotProduct(EV0, points[i] - C);
+		maxDistEV0 = dist > maxDistEV0 ? dist : maxDistEV0;
+		minDistEV0 = dist < minDistEV0 ? dist : minDistEV0;
+
+		dist = dotProduct(EV1, points[i] - C);
+		maxDistEV1 = dist > maxDistEV1 ? dist : maxDistEV1;
+		minDistEV1 = dist < minDistEV1 ? dist : minDistEV1;
+	}
+
+	std::vector<Point3d> corners;
+	corners.push_back(C + EV0*maxDistEV0 + EV1*maxDistEV1);
+	corners.push_back(C + EV0*maxDistEV0 + EV1*minDistEV1);
+	corners.push_back(C + EV0*minDistEV0 + EV1*minDistEV1);
+	corners.push_back(C + EV0*minDistEV0 + EV1*maxDistEV1);
+
+	std::vector<Point3d> lineEndings;
+	lineEndings.push_back(C + EV0*maxDistEV0);
+	lineEndings.push_back(C + EV0*minDistEV0);
+
+	std::vector<Point3d> evs;
+	evs.push_back(EV0);
+	evs.push_back(EV1);
+	evs.push_back(EV2);
+
+	//return std::make_tuple(C, corners, lineEndings, evs);
+	return corners;
 }

@@ -33,7 +33,10 @@ void queryRange_impl(Node* tree, const double minMax[6], unsigned int depth, std
 
 //Spherical Range Query
 std::vector<Point3d*> queryRangeSphere(Node* tree, Point3d* center, const double radius, bool flagging);
+std::vector<Point3d> queryRangeSphere2(Node* tree, Point3d* center, const double radius);
+
 void queryRangeSphere_impl(Node* tree, Point3d* center, const double radius, unsigned int depth, std::vector<Point3d*>& out, bool flagging);
+void queryRangeSphere_impl2(Node* tree, Point3d* center, const double radius, unsigned int depth, std::vector<Point3d>& out);
 
 //Nearest Neighbor Search
 Point3d nearestNeighbor_daniel(Node* tree, const Point3d& queryPoint);
@@ -56,12 +59,15 @@ void homogeneousThinning(Node* globalTree, Node* subTree, const double radius, s
 
 //Best-Fit Plane
 Point3d getCentroid(std::vector<Point3d>* points);
+Point3d getCentroid(std::vector<Point3d*> points);
 
 Matrix getCovarianceMatrix(std::vector<Point3d>* points, Point3d centroid);
 
 std::vector<Point3d> getDirectionsOfBestFit(Matrix covariance, std::vector<Point3d>* eigenVectorsOutput);
 
 std::vector<Point3d> getCornersOfBestFit(std::vector<Point3d>* points, Point3d centroid, std::vector<Point3d>* eigenVectors);
+
+std::vector<Point3d> bestFitPlaneCorners(std::vector<Point3d> points);
 
 //Best-Fit Sphere
 double getMeanDisToPoint(std::vector<Point3d>* points, Point3d point);
@@ -71,5 +77,8 @@ std::vector<double> getDistancesForJacobi(std::vector<Point3d>* points, Point3d 
 Matrix getJacobiMatrix(std::vector<Point3d>* points, Point3d center, std::vector<double> distances);
 
 double getVariance(const std::vector<double>* data);
+
+//Point Normals
+Point3d getPlaneNormal(std::vector<Point3d> corners);
 
 #endif // KD_TREE_H

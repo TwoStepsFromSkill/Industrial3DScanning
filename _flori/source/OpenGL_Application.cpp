@@ -186,7 +186,7 @@ int main(int argc, char* argv[]) //this function is called, wenn ou double-click
   //queryRange_impl(tree, queryRange, 0, rangeQueryResVector);
   
   //start spherical range query
-  rangeQueryResVector = queryRangeSphere(tree, &cntr, radius, false);
+  //rangeQueryResVector = queryRangeSphere(tree, &cntr, radius, false);
 
   //console output
   std::cout << "\nRED - Range Query Result:";
@@ -212,7 +212,7 @@ int main(int argc, char* argv[]) //this function is called, wenn ou double-click
   std::vector<Point3d> smoothedPoints;
 
   //start smoothing
-  smoothedPoints = computeSmoothing(points, tree, smoothRad);
+  //smoothedPoints = computeSmoothing(points, tree, smoothRad);
 
   //console output
   std::cout << "\nHSV - Smoothing Result";
@@ -227,7 +227,7 @@ int main(int argc, char* argv[]) //this function is called, wenn ou double-click
   std::vector<Point3d> thinnedPoints;
 
   //start (homogeneous) thinning
-  homogeneousThinning(tree, tree, thinRad, thinnedPoints);
+  //homogeneousThinning(tree, tree, thinRad, thinnedPoints);
 
   //console output
   std::cout << "\nBLACK - Thinning Result:";
@@ -251,6 +251,7 @@ int main(int argc, char* argv[]) //this function is called, wenn ou double-click
   #pragma endregion
 
   #pragma region BEST-FIT SPHERE
+  /*/
   // 1. Comupute initital parameter guess
   Point3d curCenter = getCentroid(&points);
   double  curRadius = getMeanDisToPoint(&points, curCenter);
@@ -327,6 +328,37 @@ int main(int argc, char* argv[]) //this function is called, wenn ou double-click
 	  if (k > 100)
 		  iterate = false;
   }
+  */
+  #pragma endregion
+
+  #pragma region POINT NORMALS
+  //neighborhood
+  const double searchRad = 1.0;
+  std::vector<Point3d> tempNeighbors;
+
+  //best-fit plane
+  std::vector<Point3d> tempBFCorners;
+
+  //output
+  Point3d normal;
+  std::vector<Point3d> pointNormals(points.size());
+
+  //calculate normal vector for each point in the cloud
+  #pragma omp parallel for
+  for (size_t i = 0; i < points.size(); i++)
+  {
+	  //get current neighborhood
+	  tempNeighbors = queryRangeSphere2(tree, &points.at(i), searchRad);
+
+	  //get best-fit plane of neighborhood
+	  tempBFCorners = bestFitPlaneCorners(tempNeighbors);
+
+	  //get normal vector
+	  normal = getPlaneNormal(tempBFCorners);
+	  normalizeVector(normal);
+
+	  pointNormals.at(i) = normal;
+  }
   #pragma endregion
 
   //-------------------------------------------------------------------------------------------------
@@ -343,7 +375,7 @@ int main(int argc, char* argv[]) //this function is called, wenn ou double-click
     drawBackground();
 
 	//draw points
-	glPointSize(3);
+	glPointSize(7);
 
 	//draw point cloud
     if (!points.empty())
@@ -351,11 +383,30 @@ int main(int argc, char* argv[]) //this function is called, wenn ou double-click
       glColor3ub(255, 255, 255);
       
 	  glEnableClientState(GL_VERTEX_ARRAY); //enable data upload to GPU
-      glVertexPointer(3, GL_DOUBLE, sizeof(Point3d), &points[0]);
+      glVertexPointer(3, GL_DOUBLE, sizeof(Point3d), &points[0]);	  
+
+	  //lighting parameters (needed if GL_LIGHTING is enabled)
+	  glEnableClientState(GL_NORMAL_ARRAY);
+	  glNormalPointer(GL_DOUBLE, sizeof(Point3d), &pointNormals[0]);
+
+	  glEnable(GL_LIGHTING);
+	  glEnable(GL_LIGHT0);
+
+	  GLfloat light_position0[] = { 1, 1, 0, 1.0 };
+	  GLfloat light_ambient[]	= { 0.0, 0.0, 0.0, 1.0 };
+	  GLfloat light_diffuse[]	= { 1.0, 1.0, 1.0, 1.0 };
+	  GLfloat light_specular[]	= { 1.0, 1.0, 1.0, 1.0 };
+	  
+	  glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
+	  glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
+	  glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
 
       //draw point cloud
       glDrawArrays(GL_POINTS, 0, (unsigned int)points.size());
 	  glDisableClientState(GL_VERTEX_ARRAY);  //disable data upload to GPU
+
+	  glDisableClientState(GL_NORMAL_ARRAY); //disable data upload to GPU
+	  glDisable(GL_LIGHTING);
     }
 
 	//-----------------------EXERCISE--AREA-------------------------------------------------------------
@@ -438,7 +489,7 @@ int main(int argc, char* argv[]) //this function is called, wenn ou double-click
 	}*/
 
 	//draw best-fit line (GOLD)
-	if (false)
+	/*if (false)
 	{
 		glColor3ub(255, 215, 0);
 		glLineWidth(1.5);
@@ -451,10 +502,10 @@ int main(int argc, char* argv[]) //this function is called, wenn ou double-click
 		glEnd();
 
 		glDisableClientState(GL_LINES); //enable data upload to GPU
-	}
+	}*/
 
 	//draw best-fit plane (DARK RED)
-	if (false)
+	/*if (false)
 	{
 		//draw lines between corners
 		glColor3ub(150, 0, 0);
@@ -484,10 +535,11 @@ int main(int argc, char* argv[]) //this function is called, wenn ou double-click
 		glEnd();
 
 		glDisableClientState(GL_POINTS); //enable data upload to GPU
-	}
+	}*/
 
-	//draw best-fit sphere
-	if (true)
+	//draw best-fit sphere (shades of GREEN)
+	/*/
+	if (false)
 	{		
 		//draw centers
 		glColor3ub(255, 255, 0);
@@ -515,7 +567,53 @@ int main(int argc, char* argv[]) //this function is called, wenn ou double-click
 			glPopMatrix();
 		}
 	}
+	*/
 
+	//draw vertex normals (BLUE)
+	if (true)
+	{
+		//hair parameters
+		double hairLength = 0.75;
+		glLineWidth(1.0);
+		glColor3ub(0, 0, 255);
+
+		glEnableClientState(GL_LINES); //enable data upload to GPU
+
+		Point3d end;
+
+		#pragma omp parallel for
+		for (size_t i = 0; i < points.size(); i++)
+		{
+			end = points.at(i) + (pointNormals.at(i) * hairLength);
+
+			glBegin(GL_LINES);
+				glVertex3d(points.at(i).x, points.at(i).y, points.at(i).z);
+				glVertex3d(end.x, end.y, end.z);
+			glEnd();
+		}
+
+		glDisableClientState(GL_LINES); //enable data upload to GPU
+	}
+
+	//simple shader for vertex normals
+	if (false)
+	{
+		#pragma omp parallel for
+		for (size_t i = 0; i < points.size(); i++)
+		{
+			glEnableClientState(GL_VERTEX_ARRAY); //enable data upload to GPU
+
+			glVertexPointer(3, GL_FLOAT, sizeof(Point3d), &points[i]);
+			glNormalPointer(GL_FLOAT, 0, &pointNormals[i]);
+			
+			glDrawArrays(GL_POINTS, 0, (unsigned int)points.size());
+			
+			glDisableClientState(GL_VERTEX_ARRAY); //disable data upload to GPU
+
+			/*glDrawElements(GL_POINTS, [[objects objectAtIndex : i] numFaces] * 3,
+				GL_UNSIGNED_SHORT, [[objects objectAtIndex : i] faces]);*/
+		}
+	}
 	//-------------------------------------------------------------------------------------------------
 
     //draw coordinate axes
